@@ -58,7 +58,7 @@ object Lexer {
     @tailrec
     private def loadRemainingIdentifier(): Unit = {
       (ch: @switch) match {
-        case id if isIdentifierStart(id) =>
+        case id if isIdentifierPart(id) =>
           putCharInBuffer(ch)
           advance()
           loadRemainingIdentifier()
