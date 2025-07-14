@@ -42,7 +42,7 @@ object Lexer {
       lineOffset = if (lastOffset < lineStartOffset) lineStartOffset else 0
       reservedWord = false
       line = lineNumber
-      (ch: @switch) match {
+      ch match {
         case SU => token = EOF
         case ' ' | FF =>
           advance()
@@ -52,6 +52,23 @@ object Lexer {
           putCharInBuffer(ch)
           advance()
           loadRemainingIdentifier()
+
+        case '0' =>
+          advance()
+          putCharInBuffer('0')
+          ch match {
+            case 'x' | 'X' =>
+              base = 16
+              putCharInBuffer('x')
+              advance()
+            case _ =>
+              base = 10
+          }
+          loadRemainingNumber()
+
+        case d if isDigit(ch) =>
+          base = 10
+          loadRemainingNumber()
       }
     }
 
@@ -66,16 +83,27 @@ object Lexer {
       }
     }
 
-    private def finishLoadingIdentifier(): Unit = {
+    private def flushLiteralBufferToStrVal(): Unit =
       strVal = literalBuffer.toString
       literalBuffer.setLength(0)
 
+    private def finishLoadingIdentifier(): Unit = {
+      flushLiteralBufferToStrVal()
       if reservedWord then token = IDENTIFIER
       else
         token = keywords.get(strVal) match {
           case Some(key) => key
           case None => IDENTIFIER
         }
+    }
+
+    private def loadRemainingNumber(): Unit = {
+      while (digitToInt(ch, base) >= 0) {
+        putCharInBuffer(ch)
+        advance()
+      }
+      token = tokenId.INTEGER_LITERAL
+      flushLiteralBufferToStrVal()
     }
   }
 }
