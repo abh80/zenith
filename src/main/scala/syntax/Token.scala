@@ -60,7 +60,9 @@ object Token {
   final case class CONSTANT() extends Token
   final case class IDENTIFIER(name: String) extends Token
   final case class STRING_LITERAL(value: String) extends Token
-  final case class INTEGER_LITERAL(value: TypeInteger)
+  final case class INTEGER_LITERAL(value: String) extends Token
+  final case class BUT() extends Token
+  final case class MUTABLE() extends Token
 }
 
 enum tokenId {
@@ -76,5 +78,3 @@ enum tokenId {
   case BUT
   case INTEGER_LITERAL
 }
-
-sealed trait TypeInteger

@@ -1,25 +1,23 @@
 package syntax
 
-import syntax.tokenId.{EOF, IDENTIFIER}
+import syntax.tokenId.*
+import util.{InvalidToken, Location, Problem}
 
 import java.io.File
 import scala.annotation.{switch, tailrec}
+import scala.collection.mutable.ArrayBuffer
 import scala.util.parsing.input.Position
 
 object Lexer {
-  val reservedWords: Set[String] = keywords.keySet
+  lazy val reservedWords: Set[String] = keywords.keySet
   private val keywords: Map[String, tokenId] = Map(
-    ("but", tokenId.BUT),
-    ("final", tokenId.CONSTANT),
-    ("constant", tokenId.CONSTANT),
-    ("mutable", tokenId.MUTABLE)
+    ("but", BUT),
+    ("final", CONSTANT),
+    ("constant", CONSTANT),
+    ("mutable", MUTABLE)
   )
 
-  class TokenPosition(val line: Int, val column: Int, lineStr: String) extends Position {
-    override def lineContents: String = lineStr
-  }
-
-  class Scanner(file: File, val content: Array[Char]) extends Reader with TokenInfo with Iterator[Token] {
+  class Scanner(file: File, val content: Array[Char])(using ctx: Context) extends Reader with TokenInfo with Iterator[Token] {
     val lines = new String(content).split("\n", -1)
     private val literalBuffer = new StringBuffer()
     var token: tokenId = EOF
@@ -29,10 +27,39 @@ object Lexer {
     override def next(): Token = {
       if token == EOF then advance()
       loadToken()
-      ???
+
+      val o = token match {
+        case EOF => return Token.EOF
+        case BUT => Token.BUT()
+        case CONSTANT => Token.CONSTANT()
+        case MUTABLE => Token.MUTABLE()
+        case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
+        case IDENTIFIER => Token.IDENTIFIER(strVal)
+      }
+
+      o.setPos(pos())
     }
 
-    def error(msg: String): Unit = ???
+    def error(msg: String): Unit =
+      ctx.reportError(InvalidToken(Location(file, pos()), msg))
+
+    private def pos() = {
+      new TokenPosition(
+        line + 1, offset - lineOffset + 1, lines(Math.max(0, Math.min(line, lines.length - 1)))
+      )
+    }
+
+    def tokenize(): Either[List[Problem], List[Token]] = {
+      val tokens = ArrayBuffer[Token]()
+      var current = next()
+
+      while (current != EOF) {
+        tokens :+ current
+        current = next()
+      }
+
+      ctx.result(tokens.toList)
+    }
 
     private def putCharInBuffer(c: Char): Unit = literalBuffer.append(c)
 
@@ -106,4 +133,10 @@ object Lexer {
       flushLiteralBufferToStrVal()
     }
   }
+
+  private class TokenPosition(val line: Int, val column: Int, lineStr: String) extends Position {
+    override def lineContents: String = lineStr
+  }
+
+
 }
