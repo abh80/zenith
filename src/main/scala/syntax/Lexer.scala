@@ -18,7 +18,7 @@ object Lexer {
   )
 
   class Scanner(file: File, val content: Array[Char])(using ctx: Context) extends Reader with TokenInfo with Iterator[Token] {
-    val lines = new String(content).split("\n", -1)
+    private val lines = new String(content).split("\n", -1)
     private val literalBuffer = new StringBuffer()
     var token: tokenId = EOF
 
@@ -28,13 +28,14 @@ object Lexer {
       if token == EOF then advance()
       loadToken()
 
-      val o = token match {
+      val o: Token = token match {
         case EOF => return Token.EOF
         case BUT => Token.BUT()
         case CONSTANT => Token.CONSTANT()
         case MUTABLE => Token.MUTABLE()
         case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
         case IDENTIFIER => Token.IDENTIFIER(strVal)
+        case ASSIGNMENT => Token.ASSIGNMENT()
       }
 
       o.setPos(pos())
@@ -43,22 +44,22 @@ object Lexer {
     def error(msg: String): Unit =
       ctx.reportError(InvalidToken(Location(file, pos()), msg))
 
-    private def pos() = {
-      new TokenPosition(
-        line + 1, offset - lineOffset + 1, lines(Math.max(0, Math.min(line, lines.length - 1)))
-      )
-    }
-
     def tokenize(): Either[List[Problem], List[Token]] = {
       val tokens = ArrayBuffer[Token]()
       var current = next()
 
-      while (current != EOF) {
-        tokens :+ current
+      while (current != Token.EOF) {
+        tokens += current
         current = next()
       }
 
       ctx.result(tokens.toList)
+    }
+
+    private def pos() = {
+      new TokenPosition(
+        line + 1, offset - lineOffset + 1, lines(Math.max(0, Math.min(line, lines.length - 1)))
+      )
     }
 
     private def putCharInBuffer(c: Char): Unit = literalBuffer.append(c)
@@ -96,6 +97,16 @@ object Lexer {
         case d if isDigit(ch) =>
           base = 10
           loadRemainingNumber()
+
+        case '=' =>
+          advance()
+          token = ASSIGNMENT
+          skipToNextToken()
+
+        case invalidToken =>
+          error(s"Invalid token: '$invalidToken'")
+          advance()
+          loadToken()
       }
     }
 
@@ -132,11 +143,20 @@ object Lexer {
       token = tokenId.INTEGER_LITERAL
       flushLiteralBufferToStrVal()
     }
+
+    // ignore all whitespaces and newlines
+    @tailrec
+    private def skipToNextToken(): Unit = {
+      (ch: @switch) match {
+        case LF | ' ' =>
+          advance()
+          skipToNextToken()
+        case _ =>
+      }
+    }
   }
 
   private class TokenPosition(val line: Int, val column: Int, lineStr: String) extends Position {
     override def lineContents: String = lineStr
   }
-
-
 }

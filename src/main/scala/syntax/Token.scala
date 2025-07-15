@@ -59,10 +59,17 @@ object Token {
   case object EOF extends Token
   final case class CONSTANT() extends Token
   final case class IDENTIFIER(name: String) extends Token
+  
+  // literals
   final case class STRING_LITERAL(value: String) extends Token
   final case class INTEGER_LITERAL(value: String) extends Token
+  
+  // language
   final case class BUT() extends Token
   final case class MUTABLE() extends Token
+  
+  // operators
+  final case class ASSIGNMENT() extends Token
 }
 
 enum tokenId {
@@ -77,4 +84,5 @@ enum tokenId {
   case MUTABLE
   case BUT
   case INTEGER_LITERAL
+  case ASSIGNMENT
 }
