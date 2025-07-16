@@ -36,6 +36,7 @@ object Lexer {
         case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
         case IDENTIFIER => Token.IDENTIFIER(strVal)
         case ASSIGNMENT => Token.ASSIGNMENT()
+        case EOL => Token.EOL()
       }
 
       o.setPos(pos())
@@ -105,7 +106,8 @@ object Lexer {
 
         case LF =>
           skipToNextToken()
-
+          token = EOL
+          
         case invalidToken =>
           error(s"Invalid token: '$invalidToken'")
           advance()
