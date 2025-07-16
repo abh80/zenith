@@ -48,22 +48,22 @@ object Parser extends Parsers {
     }
   }
 
-  def elementSequence: Parser[List[ast.Declaration]] = repsep(declaration, eol) ^^ { decls => decls }
+  def elementSequence: Parser[List[ast.Declaration]] = rep(eol) ~> repsep(declaration, rep1(eol)) <~ rep(eol) ^^ { decls => decls }
 
   private def declaration: Parser[ast.Declaration] = {
-    (Id ~ (assignment ~>! node(literal))) >> { case id ~ lit =>
-      (but ~> constant ^^ { _ => ast.DecConstant(id, lit) }) |
-        (opt(but ~> mutable) ^^ { _ => ast.DecMutable(id, lit) })
+    (Id ~ opt(is ~>! typedef) ~ (assignment ~>! node(literal))) >> { case id ~ typeDef ~ lit =>
+      (but ~> constant ^^ { _ => ast.DecConstant(id, lit, typeDef) }) |
+        (opt(but ~> mutable) ^^ { _ => ast.DecMutable(id, lit, typeDef) })
     }
   }
 
   private def constant = accept("constant", { case c: Token.CONSTANT => c })
 
-  private def eol = accept("line ending", { case t: Token.EOL => t })
-
   private def assignment = accept("=", { case t: Token.ASSIGNMENT => t })
 
   private def Id: Parser[ast.Ast.Id] = accept("identifier", { case Token.IDENTIFIER(s) => s })
+
+  private def is = accept("is", { case t: Token.IS => t })
 
   private def literal: Parser[ast.AstLiteral] =
     accept("literal", {
@@ -90,7 +90,14 @@ object Parser extends Parsers {
 
   private def mutable = accept("mutable", { case t: Token.MUTABLE => t })
 
-  class TokenReader(tokens: List[Token]) extends ScalaParserReader[Token] {
+  private def typedef: Parser[ast.Ast.TypeDef] = accept("type definition", {
+    case Token.TYPE_INTEGER() => ast.Ast.TypeDefInteger()
+    case Token.TYPE_STRING() => ast.Ast.TypeDefString()
+  })
+
+  private def eol = accept("line ending", { case t: Token.EOL => t })
+
+  private class TokenReader(tokens: List[Token]) extends ScalaParserReader[Token] {
     override def first: Token = tokens.head
 
     override def rest: ScalaParserReader[Token] = new TokenReader(tokens.tail)

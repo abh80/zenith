@@ -14,7 +14,10 @@ object Lexer {
     ("but", BUT),
     ("final", CONSTANT),
     ("constant", CONSTANT),
-    ("mutable", MUTABLE)
+    ("mutable", MUTABLE),
+    ("is", IS),
+    ("string", TYPE_STRING),
+    ("integer", TYPE_INTEGER)
   )
 
   class Scanner(file: File, val content: Array[Char])(using ctx: Context) extends Reader with TokenInfo with Iterator[Token] {
@@ -37,6 +40,9 @@ object Lexer {
         case IDENTIFIER => Token.IDENTIFIER(strVal)
         case ASSIGNMENT => Token.ASSIGNMENT()
         case EOL => Token.EOL()
+        case IS => Token.IS()
+        case TYPE_STRING => Token.TYPE_STRING()
+        case TYPE_INTEGER => Token.TYPE_INTEGER()
       }
 
       o.setPos(pos())
