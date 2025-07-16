@@ -70,6 +70,7 @@ object Token {
   
   // operators
   final case class ASSIGNMENT() extends Token
+  final case class EOL() extends Token
 }
 
 enum tokenId {
@@ -85,4 +86,5 @@ enum tokenId {
   case BUT
   case INTEGER_LITERAL
   case ASSIGNMENT
+  case EOL
 }
