@@ -15,6 +15,8 @@ abstract class Warning extends Problem
 abstract class Error extends Problem
 
 final case class InvalidToken(loc: Location, msg: String) extends Error
+final case class SyntaxError(loc: Location, msg: String) extends Error
+final case class FatalCompilerError(msg: String = "Fatal compiler error has occurred please contact the maintainer") extends Error
 
 object Problem {
   private def printErr(locOpt: Option[Location])(msg: String): Unit = {

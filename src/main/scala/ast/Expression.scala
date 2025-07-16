@@ -1,3 +1,3 @@
 package ast
 
-sealed trait Expression extends AstNode[AstLiteral]
+sealed trait Expression
