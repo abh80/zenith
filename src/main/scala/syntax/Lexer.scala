@@ -103,6 +103,9 @@ object Lexer {
           token = ASSIGNMENT
           skipToNextToken()
 
+        case LF =>
+          skipToNextToken()
+
         case invalidToken =>
           error(s"Invalid token: '$invalidToken'")
           advance()
