@@ -97,6 +97,25 @@ object Parser extends Parsers {
 
   private def eol = accept("line ending", { case t: Token.EOL => t })
 
+  override def commit[T](p: => Parser[T]): Parser[T] = Parser { in =>
+    def setError(e: Error) = {
+      error match {
+        case None => error = Some(e)
+        case _ =>
+      }
+      e
+    }
+
+    val r = p(in)
+    r match {
+      case s@Success(result, next) => s
+      case e: Error => setError(e)
+      case Failure(msg, next) => setError(Error(msg, next))
+    }
+  }
+
+  def Elem: Token.type = Token
+
   private class TokenReader(tokens: List[Token]) extends ScalaParserReader[Token] {
     override def first: Token = tokens.head
 
