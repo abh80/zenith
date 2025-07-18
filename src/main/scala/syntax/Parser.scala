@@ -10,13 +10,13 @@ import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.input.{NoPosition, Position, Positional, Reader as ScalaParserReader}
 
 object Parser extends Parsers {
+  implicit val ctx: CompilationContext = CompilationContext()
 
   private var error: Option[Error] = None
 
   def parseInputFile[T](p: Parser[T])(f: File): util.Result[T] = {
     Metadata.file = f
     Using.resource(Source.fromFile(f)) { source =>
-      implicit val ctx: Context = Context()
       parseTokens(p)(new Lexer.Scanner(f, source.toArray))
     }
   }
@@ -48,9 +48,9 @@ object Parser extends Parsers {
     }
   }
 
-  def elementSequence: Parser[List[ast.Declaration]] = rep(eol) ~> repsep(declaration, rep1(eol)) <~ rep(eol) ^^ { decls => decls }
+  def elementSequence: Parser[List[ast.AstNode[_]]] = rep(eol) ~> repsep(declaration, rep1(eol)) <~ rep(eol) ^^ { decls => decls }
 
-  private def declaration: Parser[ast.Declaration] = {
+  private def declaration: Parser[ast.AstNode[ast.Declaration]] = node {
     (Id ~ opt(is ~>! typedef) ~ (assignment ~>! node(literal))) >> { case id ~ typeDef ~ lit =>
       (but ~> constant ^^ { _ => ast.DecConstant(id, lit, typeDef) }) |
         (opt(but ~> mutable) ^^ { _ => ast.DecMutable(id, lit, typeDef) })

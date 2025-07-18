@@ -20,7 +20,7 @@ object Lexer {
     ("integer", TYPE_INTEGER)
   )
 
-  class Scanner(file: File, val content: Array[Char])(using ctx: Context) extends Reader with TokenInfo with Iterator[Token] {
+  class Scanner(file: File, val content: Array[Char])(using ctx: CompilationContext) extends Reader with TokenInfo with Iterator[Token] {
     private val lines = new String(content).split("\n", -1)
     private val literalBuffer = new StringBuffer()
     var token: tokenId = EOF

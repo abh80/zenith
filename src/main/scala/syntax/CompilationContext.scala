@@ -1,10 +1,19 @@
 package syntax
 
-import util.{Error, Warning, Problem}
+import ast.AstNode
+import util.{Error, Problem, Warning}
 
-class Context {
+class CompilationContext {
+
+  private var nextId: AstNode.Id = 0
   private var errors: Vector[Error] = Vector.empty
   private var warnings: Vector[Warning] = Vector.empty
+
+  def getNextId: AstNode.Id = {
+    val id = nextId
+    nextId += 1
+    id
+  }
 
   def reportError(err: Error): Unit = {
     errors = errors :+ err
@@ -13,12 +22,6 @@ class Context {
   def reportWarning(warn: Warning): Unit = {
     warnings = warnings :+ warn
   }
-
-  /** Checks if there are any errors */
-  def hasErrors: Boolean = errors.nonEmpty
-
-  /** Checks if there are any warnings */
-  def hasWarnings: Boolean = warnings.nonEmpty
 
   /** Prints all errors and warnings */
   def print(): Unit = {
@@ -32,11 +35,17 @@ class Context {
     }
   }
 
+  /** Checks if there are any warnings */
+  def hasWarnings: Boolean = warnings.nonEmpty
+
   /** Returns the compilation result */
   def result[T](value: => T): Either[List[Problem], T] = {
     if (hasErrors) Left(getErrors)
     else Right(value)
   }
+
+  /** Checks if there are any errors */
+  def hasErrors: Boolean = errors.nonEmpty
 
   /** Gets all accumulated errors */
   def getErrors: List[Problem] = errors.toList
