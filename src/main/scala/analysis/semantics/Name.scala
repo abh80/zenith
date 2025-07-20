@@ -38,7 +38,7 @@ object Name {
     def toIdentifierList: List[Unqualified] = qualifier :+ base
   }
 
-  object Qualifier {
+  private object Qualifier {
     def fromIdentifierList(ids: List[Ast.Id]): Qualified =
       ids.reverse match {
         case head :: tail => Qualified(tail.reverse, head)
