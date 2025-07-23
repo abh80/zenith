@@ -17,8 +17,8 @@ object Name {
       def fl(s1: String, s2: String) = s1 ++ "." ++ s2
 
       def convertQualifiersToString = qualifier match {
-        case None => ""
-        case head :: tail => tail.fold(head)(f) ++ "."
+        case Nil => ""
+        case head :: tail => tail.fold(head)(fl) ++ "."
       }
 
       convertQualifiersToString ++ base

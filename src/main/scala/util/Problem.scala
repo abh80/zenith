@@ -1,5 +1,7 @@
 package util
 
+import analysis.semantics.Type
+
 sealed trait Problem {
   def print(): Unit = {
     this match {
@@ -18,7 +20,13 @@ final case class InvalidToken(loc: Location, msg: String) extends Error
 
 final case class SyntaxError(loc: Location, msg: String) extends Error
 
+final case class UnknownTypeDefinition(loc: Location, msg: String) extends Error
+
 final case class FatalCompilerError(msg: String = "Fatal compiler error has occurred please contact the maintainer") extends Error
+
+final case class TypeMismatch(loc: Location, type1: Type, type2: Type) extends Error
+
+final case class DuplicateSymbolDeclaration(loc: Location, name: String) extends Error
 
 object Problem {
   private def printErr(locOpt: Option[Location])(msg: String): Unit = {
