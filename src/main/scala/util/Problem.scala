@@ -8,6 +8,18 @@ sealed trait Problem {
     this match {
       case InvalidToken(loc, msg) =>
         Problem.printErr(Some(loc))(s"invalid token: $msg")
+      case SyntaxError(loc, msg) =>
+        Problem.printErr(Some(loc))(s"syntax error: $msg")
+      case UnknownTypeDefinition(loc, msg) =>
+        Problem.printErr(Some(loc))(s"unknown type definition: $msg")
+      case FatalCompilerError(msg) =>
+        Problem.printErr(None)(msg)
+      case TypeMismatch(loc, type1, type2) =>
+        Problem.printErr(Some(loc))(s"type mismatch: expected $type1, found $type2")
+      case DuplicateSymbolDeclaration(loc, name) =>
+        Problem.printErr(Some(loc))(s"duplicate symbol declaration: $name")
+      case UnsupportedNodeTypeForCodeGeneratorContext(node) =>
+        Problem.printErr(None)(s"unsupported node type for code generator: ${node.getClass.getSimpleName}")
       case _ =>
     }
   }
