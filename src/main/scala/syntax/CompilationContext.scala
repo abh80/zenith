@@ -1,7 +1,9 @@
 package syntax
 
+import analysis.Analyzer
 import ast.AstNode
-import util.{Error, Problem, Warning}
+import generator.{CodeGenerator, Target}
+import util.{Error, Problem, Result, Warning}
 
 class CompilationContext {
 
@@ -34,6 +36,10 @@ class CompilationContext {
       errors.foreach(_.print())
     }
   }
+
+  def generateCode(nodes: List[AstNode[_]], analyzer: Analyzer, target: Target): Result[String] =
+    val generator = CodeGenerator.target(target)
+    generator.generateCode(nodes, analyzer)
 
   /** Checks if there are any warnings */
   def hasWarnings: Boolean = warnings.nonEmpty
