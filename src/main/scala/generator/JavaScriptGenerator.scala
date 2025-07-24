@@ -1,7 +1,9 @@
 package generator
 
 import analysis.Analyzer
+import analysis.semantics.Type
 import ast.*
+import ast.Ast.TypeDef
 import generator.Target.JavaScript
 import generator.emitters.JavaScriptEmitter
 import util.{Result, UnsupportedNodeTypeForCodeGeneratorContext}
@@ -28,19 +30,37 @@ class JavaScriptGenerator extends CodeGenerator {
 
   private def generateDeclaration(declNode: AstNode[Declaration], context: GeneratorContext): Result[String] =
     declNode.data match {
-      case DecConstant(name, value, typeDef) => generateConstantDeclaration(name, value, typeDef, context)
-      case DecMutable(name, value, typeDef) => generateMutableDeclaration(name, value, typeDef, context)
+      case DecConstant(name, value, _) => generateConstantDeclaration(name, value, context.getTypeDefFromSymbol(declNode.id), context)
+      case DecMutable(name, value, _) => generateMutableDeclaration(name, value, context.getTypeDefFromSymbol(declNode.id), context)
     }
 
-  private def generateConstantDeclaration(name: Ast.Id, value: AstNode[AstLiteral], maybeTypeDef: Option[Ast.TypeDef], ctx: GeneratorContext): Result[String] =
+  private def generateConstantDeclaration(name: Ast.Id, value: AstNode[AstLiteral], maybeTypeDef: Option[TypeDef], ctx: GeneratorContext): Result[String] =
     for {
       jsVal <- generateExpression(value, ctx)
-    } yield s"const $name = $jsVal;"
+      typeDef = maybeTypeDef.get
+      typeDefComment = generateTypeDefComment(typeDef, ctx)
+    } yield {
+      val comment = if (typeDefComment.nonEmpty) s"$typeDefComment\n${ctx.indent}" else ""
+      s"${comment}const $name = $jsVal;"
+    }
 
-  private def generateMutableDeclaration(name: Ast.Id, value: AstNode[AstLiteral], maybeTypeDef: Option[Ast.TypeDef], ctx: GeneratorContext): Result[String] =
+  private def generateTypeDefComment(typeDef: TypeDef, ctx: GeneratorContext): String = {
+    val comment = typeDef match {
+      case Ast.TypeDefString() => "@type {string}"
+      case Ast.TypeDefInteger() => "@type {number}"
+    }
+    emitter.emitComment(comment)
+  }
+
+  private def generateMutableDeclaration(name: Ast.Id, value: AstNode[AstLiteral], maybeTypeDef: Option[TypeDef], ctx: GeneratorContext): Result[String] =
     for {
       jsVal <- generateExpression(value, ctx)
-    } yield s"let $name = $jsVal;"
+      typeDef = maybeTypeDef.get
+      typeDefComment = generateTypeDefComment(typeDef, ctx)
+    } yield {
+      val comment = if (typeDefComment.nonEmpty) s"$typeDefComment\n${ctx.indent}" else ""
+      s"${comment}let $name = $jsVal;"
+    }
 
   private def generateExpression(node: AstNode[AstLiteral], context: GeneratorContext): Result[String] =
     node.data match {

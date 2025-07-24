@@ -6,4 +6,6 @@ trait Emitter {
   def emitIntegerLiteral(value: String): String
 
   def emitIdentifier(name: String): String
+
+  def emitComment(comment: String): String
 }

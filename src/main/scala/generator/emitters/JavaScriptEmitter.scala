@@ -7,4 +7,6 @@ class JavaScriptEmitter extends Emitter {
   override def emitIntegerLiteral(value: String): String = value
 
   override def emitIdentifier(name: String): String = ???
+
+  override def emitComment(comment: String): String = s"// $comment"
 }

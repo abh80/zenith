@@ -2,7 +2,8 @@ package generator
 
 import analysis.Analyzer
 import analysis.semantics.{Scope, Type, Value}
-import ast.AstNode
+import ast.{Ast, AstNode}
+import util.{FatalCompilerError, Result}
 
 case class GeneratorContext(analyzer: Analyzer, currentScope: Scope, indentLevel: Int = 0, parentNode: Option[AstNode[?]] = None) {
   def withIndent(level: Int): GeneratorContext =
@@ -19,4 +20,13 @@ case class GeneratorContext(analyzer: Analyzer, currentScope: Scope, indentLevel
 
   def indent: String = "  " * indentLevel
 
+  def getTypeDefFromSymbol(nodeId: AstNode.Id) : Option[Ast.TypeDef] =
+    getSymbolType(nodeId) match {
+      case Some(t) =>
+        t match {
+          case integer: Type.Integer => Some(Ast.TypeDefInteger())
+          case primitive: Type.Primitive => ???
+        }
+      case None => None
+    }
 }
