@@ -1,6 +1,7 @@
 package util
 
 import analysis.semantics.Type
+import ast.AstNode
 
 sealed trait Problem {
   def print(): Unit = {
@@ -27,6 +28,8 @@ final case class FatalCompilerError(msg: String = "Fatal compiler error has occu
 final case class TypeMismatch(loc: Location, type1: Type, type2: Type) extends Error
 
 final case class DuplicateSymbolDeclaration(loc: Location, name: String) extends Error
+
+final case class UnsupportedNodeTypeForCodeGeneratorContext(node: AstNode[_]) extends Error
 
 object Problem {
   private def printErr(locOpt: Option[Location])(msg: String): Unit = {
