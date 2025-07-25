@@ -17,7 +17,8 @@ object Lexer {
     ("mutable", MUTABLE),
     ("is", IS),
     ("string", TYPE_STRING),
-    ("integer", TYPE_INTEGER)
+    ("text", TYPE_STRING),
+    ("number", TYPE_INTEGER)
   )
 
   class Scanner(file: File, val content: Array[Char])(using ctx: CompilationContext) extends Reader with TokenInfo with Iterator[Token] {
@@ -37,6 +38,7 @@ object Lexer {
         case CONSTANT => Token.CONSTANT()
         case MUTABLE => Token.MUTABLE()
         case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
+        case STRING_LITERAL => Token.STRING_LITERAL(strVal)
         case IDENTIFIER => Token.IDENTIFIER(strVal)
         case ASSIGNMENT => Token.ASSIGNMENT()
         case EOL => Token.EOL()
@@ -113,7 +115,11 @@ object Lexer {
         case LF =>
           skipToNextToken()
           token = EOL
-          
+
+        case '"' =>
+          advance()
+          loadString()
+
         case invalidToken =>
           error(s"Invalid token: '$invalidToken'")
           advance()
@@ -163,6 +169,39 @@ object Lexer {
           advance()
           skipToNextToken()
         case _ =>
+      }
+    }
+
+    @tailrec
+    private def loadString(): Unit = {
+      (ch: @switch) match {
+        case '"' =>
+          advance()
+          token = tokenId.STRING_LITERAL
+          flushLiteralBufferToStrVal()
+
+        case SU | LF | CR =>
+          error("Unterminated string literal")
+          token = tokenId.STRING_LITERAL
+          flushLiteralBufferToStrVal()
+
+        case '\\' =>
+          advance()
+          ch match {
+            case 'n' => putCharInBuffer('\n')
+            case 't' => putCharInBuffer('\t')
+            case 'r' => putCharInBuffer('\r')
+            case '\\' => putCharInBuffer('\\')
+            case '"' => putCharInBuffer('"')
+            case _ => error(s"Invalid escape sequence '\\$ch'")
+          }
+          advance()
+          loadString()
+
+        case _ =>
+          putCharInBuffer(ch)
+          advance()
+          loadString()
       }
     }
   }

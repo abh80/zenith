@@ -92,6 +92,7 @@ enum tokenId {
   case MUTABLE
   case BUT
   case INTEGER_LITERAL
+  case STRING_LITERAL
   case ASSIGNMENT
   case EOL
   case IS

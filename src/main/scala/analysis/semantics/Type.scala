@@ -40,12 +40,41 @@ object Type {
 
     def bitWidth: Int
   }
+  
+  sealed trait String extends Type
+  
+  sealed trait IdentifierReference extends Type
 
   case object Integer extends Integer {
     override def getDefaultValue: Option[Value] = Some(Value.Integer(0))
 
     override def isStreamPrintable: Boolean = true
 
-    override def toString: String = "Integer"
+    override def toString = "Integer"
   }
+
+  case object String extends String {
+
+    override def getDefaultValue: Option[Value] = Some(Value.String(""))
+
+    override def isCompatibleWith(t: Type): Boolean = t match {
+      case String => true
+      case _ => false
+    }
+
+    override def isStreamPrintable: Boolean = true
+  }
+
+  case object IdentifierReference extends IdentifierReference {
+    override def getDefaultValue: Option[Value] = None
+
+    override def isCompatibleWith(t: Type): Boolean = true
+
+    def isCompatibleWith(value: Value.IdentifierReference, targetType: Type): Boolean = {
+      value.underlyingType.isCompatibleWith(targetType)
+    }
+    
+    override def toString = "Identifier"
+  }
+  
 }

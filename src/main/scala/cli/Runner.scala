@@ -120,6 +120,7 @@ Examples:
           println("=== Semantic Analysis Results ===")
           println(s"Symbols: ${analyzer.symbolScopeMap.keys.mkString(", ")}")
           println(s"Types: ${analyzer.typeMap}")
+          println(s"Values: ${analyzer.valueMap}")
           println()
         }
         Result.success(())
@@ -129,7 +130,7 @@ Examples:
       output <- {
         if (config.verbose) println(s"Generating ${config.targetLanguage} code...")
         val generator = CodeGenerator.target(config.targetLanguage)
-        generator.generateCode(ast, analyzer)
+        generator.generateCode(analyzer)
       }
 
     } yield output

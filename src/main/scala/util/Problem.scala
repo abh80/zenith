@@ -15,11 +15,12 @@ sealed trait Problem {
       case FatalCompilerError(msg) =>
         Problem.printErr(None)(msg)
       case TypeMismatch(loc, type1, type2) =>
-        Problem.printErr(Some(loc))(s"type mismatch: expected $type1, found $type2")
+        Problem.printErr(Some(loc))(s"type mismatch: expected $type1 but found $type2 instead")
       case DuplicateSymbolDeclaration(loc, name) =>
         Problem.printErr(Some(loc))(s"duplicate symbol declaration: $name")
       case UnsupportedNodeTypeForCodeGeneratorContext(node) =>
         Problem.printErr(None)(s"unsupported node type for code generator: ${node.getClass.getSimpleName}")
+      case UndeclaredIdentifierReferenced(loc, name) => Problem.printErr(Some(loc))(s"undeclared identifier referenced: $name")
       case _ =>
     }
   }
@@ -42,6 +43,8 @@ final case class TypeMismatch(loc: Location, type1: Type, type2: Type) extends E
 final case class DuplicateSymbolDeclaration(loc: Location, name: String) extends Error
 
 final case class UnsupportedNodeTypeForCodeGeneratorContext(node: AstNode[_]) extends Error
+
+final case class UndeclaredIdentifierReferenced(loc: Location, name: String) extends Error
 
 object Problem {
   private def printErr(locOpt: Option[Location])(msg: String): Unit = {

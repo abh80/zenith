@@ -26,7 +26,6 @@ object Parser extends Parsers {
       case Left(errors) => return Left(errors)
       case Right(t) => t
     }
-    println(tokens)
     val reader = new TokenReader(tokens)
 
     parseInputs(p)(reader.asInstanceOf[Input]) match {
@@ -68,6 +67,7 @@ object Parser extends Parsers {
   private def literal: Parser[ast.AstLiteral] =
     accept("literal", {
       case Token.INTEGER_LITERAL(value) => ast.IntegerLiteral(value)
+      case Token.STRING_LITERAL(value) => ast.StringLiteral(value)
       case Token.IDENTIFIER(ident) => ast.IdentifierExpression(ident)
     })
 

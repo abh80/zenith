@@ -13,7 +13,7 @@ object Target {
 trait CodeGenerator {
   def target: Target
 
-  def generateCode(nodes: List[AstNode[?]], analyzer: Analyzer): Result[String]
+  def generateCode(analyzer: Analyzer): Result[String]
 }
 
 object CodeGenerator {

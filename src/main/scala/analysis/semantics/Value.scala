@@ -12,4 +12,16 @@ object Value {
 
     override def getType: Type = Type.Integer
   }
+
+  case class String(value: java.lang.String) extends Value {
+    override def getType: Type = Type.String
+  }
+
+  case class IdentifierReference(name: Name.Unqualified, referenceType: Type) extends Value {
+    override def getType: Type = Type.IdentifierReference
+
+    override def toString: Name.Unqualified = name
+
+    def underlyingType: Type = referenceType
+  }
 }

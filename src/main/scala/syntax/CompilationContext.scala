@@ -37,9 +37,9 @@ class CompilationContext {
     }
   }
 
-  def generateCode(nodes: List[AstNode[_]], analyzer: Analyzer, target: Target): Result[String] =
+  def generateCode(analyzer: Analyzer, target: Target): Result[String] =
     val generator = CodeGenerator.target(target)
-    generator.generateCode(nodes, analyzer)
+    generator.generateCode(analyzer)
 
   /** Checks if there are any warnings */
   def hasWarnings: Boolean = warnings.nonEmpty

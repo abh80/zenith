@@ -39,16 +39,21 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
 
   private def resolveTypeAnnotation(typeDef: Ast.TypeDef): Result[Type] =
     typeDef match {
-      case Ast.TypeDefString() => ???
+      case Ast.TypeDefString() => Right(Type.String)
       case Ast.TypeDefInteger() => Right(Type.Integer)
       case _ => Left(List(UnknownTypeDefinition(getLoc, "Unknown type definition")))
     }
 
   private def inferExpressionType(exprNode: AstNode[AstLiteral]): Result[Type] =
     exprNode.data match {
-      case StringLiteral(value) => ???
+      case StringLiteral(value) => Right(Type.String)
       case IntegerLiteral(value) => Right(Type.Integer)
-      case IdentifierExpression(value) => ???
+      case IdentifierExpression(value) =>
+        analyzer.currentScope.lookup(value) match {
+          case Some(sym) => Right(analyzer.typeMap(sym.nodeId))
+          case None => Right(Type.String)
+            // Left(List(UndeclaredIdentifierReferenced(getLoc(exprNode.id), value)))
+        }
       case _ => Left(List(UnknownTypeDefinition(Locations.getOpt(exprNode.id).get, "Unknown type definition")))
     }
 

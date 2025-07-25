@@ -26,6 +26,7 @@ case class GeneratorContext(analyzer: Analyzer, currentScope: Scope, indentLevel
         t match {
           case integer: Type.Integer => Some(Ast.TypeDefInteger())
           case primitive: Type.Primitive => ???
+          case s: Type.String => Some(Ast.TypeDefString())
         }
       case None => None
     }
