@@ -5,6 +5,8 @@ import analysis.semantics.*
 import ast.*
 import util.Result
 
+import scala.collection.immutable.ListSet
+
 case class Analyzer(
                      level: Int,
                      currentScope: Scope,
@@ -14,7 +16,7 @@ case class Analyzer(
                      symbolScopeMap: Map[Symbol, Scope] = Map(),
                      typeMap: Map[AstNode.Id, Type] = Map(),
                      valueMap: Map[AstNode.Id, Value] = Map(),
-                     usedSymbolSet: Set[Symbol] = Set()
+                     usedSymbolSet: ListSet[Symbol] = ListSet()
                    ) {
   private type Node = AstNode[?]
 

@@ -67,6 +67,7 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
   private def updateAnalyzerWithDeclaration(analyzer: Analyzer, symbol: Symbol, scope: Scope, declaredType: Type, value: Value): Analyzer =
     analyzer.copy(currentScope = scope, symbolScopeMap = analyzer.symbolScopeMap + (symbol -> analyzer.currentScope),
       typeMap = analyzer.typeMap + (node.id -> declaredType),
-      valueMap = analyzer.valueMap + (node.id -> value)
+      valueMap = analyzer.valueMap + (node.id -> value),
+      usedSymbolSet = analyzer.usedSymbolSet + symbol
     )
 }
