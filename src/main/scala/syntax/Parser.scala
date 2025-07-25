@@ -26,6 +26,7 @@ object Parser extends Parsers {
       case Left(errors) => return Left(errors)
       case Right(t) => t
     }
+    println(tokens)
     val reader = new TokenReader(tokens)
 
     parseInputs(p)(reader.asInstanceOf[Input]) match {
@@ -68,8 +69,12 @@ object Parser extends Parsers {
     accept("literal", {
       case Token.INTEGER_LITERAL(value) => ast.IntegerLiteral(value)
       case Token.STRING_LITERAL(value) => ast.StringLiteral(value)
-      case Token.IDENTIFIER(ident) => ast.IdentifierExpression(ident)
-    })
+    }) | rep1(accept("identifier", { case Token.IDENTIFIER(ident) => ident })) ^^ { identifiers =>
+    if (identifiers.length == 1) 
+      ast.IdentifierExpression(identifiers.head)
+    else 
+      ast.StringLiteral(identifiers.mkString(" "))
+  }
 
   private def but = accept("but", { case t: Token.BUT => t })
 

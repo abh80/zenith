@@ -15,7 +15,7 @@ class JavaScriptGenerator extends CodeGenerator {
 
   override def generateCode(analyzer: Analyzer): Result[String] = {
     val context = GeneratorContext(analyzer, analyzer.currentScope)
-    val symbolsToProcess = analyzer.symbolScopeMap.keys
+    val symbolsToProcess = analyzer.usedSymbolSet
 
     val res = symbolsToProcess.toList.map { symbol =>
       generateDeclarationForSymbol(symbol, context)
