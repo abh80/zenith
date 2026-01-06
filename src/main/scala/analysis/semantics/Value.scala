@@ -34,4 +34,13 @@ object Value {
     override def getType: Type = Type.Integer // Simplified assumption
     override def toString: java.lang.String = s"UnaryOp($op, $operand)"
   }
+
+  case class InterpolatedString(segments: List[InterpolatedSegment]) extends Value {
+    override def getType: Type = Type.String
+    override def toString: java.lang.String = s"InterpolatedString(${segments.mkString(", ")})"
+  }
+
+  sealed trait InterpolatedSegment
+  case class TextSegment(text: java.lang.String) extends InterpolatedSegment
+  case class ExprSegment(value: Value) extends InterpolatedSegment
 }

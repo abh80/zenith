@@ -20,3 +20,10 @@ final case class StringLiteral(value: String) extends AstLiteral
 final case class IntegerLiteral(value: String) extends AstLiteral
 
 final case class IdentifierExpression(value: Ast.Id) extends AstLiteral
+
+// String interpolation support
+sealed trait StringSegment
+final case class TextSegment(text: String) extends StringSegment
+final case class ExpressionSegment(expr: AstNode[Expression]) extends StringSegment
+
+final case class InterpolatedString(segments: List[StringSegment]) extends AstLiteral

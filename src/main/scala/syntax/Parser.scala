@@ -173,11 +173,75 @@ object Parser extends Parsers {
     accept("literal", {
       case Token.INTEGER_LITERAL(value) => ast.IntegerLiteral(value)
       case Token.STRING_LITERAL(value) => ast.StringLiteral(value)
+      case Token.INTERPOLATED_STRING_LITERAL(value) => parseInterpolatedString(value)
     }) | rep1(Id) ^^ { identifiers =>
     if (identifiers.length == 1) 
       ast.IdentifierExpression(identifiers.head)
     else 
       ast.StringLiteral(identifiers.mkString(" "))
+  }
+
+  private def parseInterpolatedString(rawString: String): ast.InterpolatedString = {
+    val segments = scala.collection.mutable.ListBuffer[ast.StringSegment]()
+    var i = 0
+    val textBuffer = new StringBuilder()
+
+    while (i < rawString.length) {
+      if (rawString(i) == '$' && i + 1 < rawString.length) {
+        // Flush any accumulated text
+        if (textBuffer.nonEmpty) {
+          segments += ast.TextSegment(textBuffer.toString())
+          textBuffer.clear()
+        }
+
+        i += 1 // Skip the '$'
+        
+        if (rawString(i) == '(') {
+          // Complex expression: $(...)
+          i += 1 // Skip the '('
+          val exprStart = i
+          var parenDepth = 1
+          
+          while (i < rawString.length && parenDepth > 0) {
+            if (rawString(i) == '(') parenDepth += 1
+            else if (rawString(i) == ')') parenDepth -= 1
+            i += 1
+          }
+          
+          val exprString = rawString.substring(exprStart, i - 1)
+          // Parse the expression
+          val exprTokens = new Lexer.Scanner(Metadata.file, exprString.toArray).tokenize() match {
+            case Left(_) => throw new Exception(s"Failed to tokenize expression: $exprString")
+            case Right(tokens) => tokens
+          }
+          
+          val reader = new TokenReader(exprTokens)
+          parseInputs(expression)(reader.asInstanceOf[Input]) match {
+            case Success(expr, _) => segments += ast.ExpressionSegment(expr)
+            case _ => throw new Exception(s"Failed to parse expression: $exprString")
+          }
+        } else {
+          // Simple identifier: $identifier
+          val identStart = i
+          while (i < rawString.length && (rawString(i).isLetterOrDigit || rawString(i) == '_')) {
+            i += 1
+          }
+          val identifier = rawString.substring(identStart, i)
+          val identExpr = ast.AstNode.createNode[ast.Expression](ast.IdentifierExpression(identifier))
+          segments += ast.ExpressionSegment(identExpr)
+        }
+      } else {
+        textBuffer.append(rawString(i))
+        i += 1
+      }
+    }
+
+    // Flush any remaining text
+    if (textBuffer.nonEmpty) {
+      segments += ast.TextSegment(textBuffer.toString())
+    }
+
+    ast.InterpolatedString(segments.toList)
   }
 
   private def but = accept("but", { case t: Token.BUT => t })

@@ -29,8 +29,33 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
         for {
           valVal <- evaluateExpression(operand.data, expectedType)
         } yield Value.UnaryOp(valVal, op)
+      case InterpolatedString(segments) if expectedType == Type.String =>
+        evaluateInterpolatedString(segments)
       case _ => ???
     }
+
+  private def evaluateInterpolatedString(segments: List[StringSegment]): Result[Value] = {
+    val evaluatedSegments = segments.map {
+      case TextSegment(text) => Right(Value.TextSegment(text))
+      case ExpressionSegment(exprNode) =>
+        // Try to evaluate as any type, we'll convert to string during code generation
+        val exprType = inferExpressionType(exprNode.data)
+        evaluateExpression(exprNode.data, exprType).map(Value.ExprSegment(_))
+    }
+    
+    val (errors, values) = evaluatedSegments.partitionMap(identity)
+    if (errors.nonEmpty) Left(errors.flatten)
+    else Right(Value.InterpolatedString(values))
+  }
+
+  private def inferExpressionType(expr: Expression): Type = expr match {
+    case _: StringLiteral | _: InterpolatedString => Type.String
+    case _: IntegerLiteral => Type.Integer
+    case IdentifierExpression(name) =>
+      analyzer.currentScope.lookup(name).map(sym => analyzer.typeMap(sym.nodeId)).getOrElse(Type.String)
+    case _: BinaryExpression | _: UnaryExpression => Type.Integer
+    case _ => Type.String
+  }
 
   private def integer(in: String): Result[BigInt] =
     try

@@ -41,6 +41,7 @@ object Lexer {
         case PRINT => Token.PRINT()
         case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
         case STRING_LITERAL => Token.STRING_LITERAL(strVal)
+        case INTERPOLATED_STRING_LITERAL => Token.INTERPOLATED_STRING_LITERAL(strVal)
         case IDENTIFIER => Token.IDENTIFIER(strVal)
         case ASSIGNMENT => Token.ASSIGNMENT()
         case EOL => Token.EOL()
@@ -184,17 +185,21 @@ object Lexer {
       }
     }
 
-    @tailrec
     private def loadString(): Unit = {
+      loadStringWithInterpolation(hasInterpolation = false)
+    }
+
+    @tailrec
+    private def loadStringWithInterpolation(hasInterpolation: Boolean): Unit = {
       (ch: @switch) match {
         case '"' =>
           advance()
-          token = tokenId.STRING_LITERAL
+          token = if (hasInterpolation) tokenId.INTERPOLATED_STRING_LITERAL else tokenId.STRING_LITERAL
           flushLiteralBufferToStrVal()
 
         case SU | LF | CR =>
           error("Unterminated string literal")
-          token = tokenId.STRING_LITERAL
+          token = if (hasInterpolation) tokenId.INTERPOLATED_STRING_LITERAL else tokenId.STRING_LITERAL
           flushLiteralBufferToStrVal()
 
         case '\\' =>
@@ -208,12 +213,17 @@ object Lexer {
             case _ => error(s"Invalid escape sequence '\\$ch'")
           }
           advance()
-          loadString()
+          loadStringWithInterpolation(hasInterpolation)
+
+        case '$' =>
+          putCharInBuffer(ch)
+          advance()
+          loadStringWithInterpolation(hasInterpolation = true)
 
         case _ =>
           putCharInBuffer(ch)
           advance()
-          loadString()
+          loadStringWithInterpolation(hasInterpolation)
       }
     }
   }

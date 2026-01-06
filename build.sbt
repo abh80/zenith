@@ -12,3 +12,5 @@ lazy val root = (project in file("."))
 libraryDependencies += ("com.github.scopt" %% "scopt" % "4.1.0")
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.4.0"
+
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.18" % Test

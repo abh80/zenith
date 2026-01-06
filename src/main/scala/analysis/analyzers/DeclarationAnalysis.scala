@@ -58,6 +58,7 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
     exprNode.data match {
       case StringLiteral(value) => Right(Type.String)
       case IntegerLiteral(value) => Right(Type.Integer)
+      case InterpolatedString(_) => Right(Type.String)
       case IdentifierExpression(value) =>
         analyzer.currentScope.lookup(value) match {
           case Some(sym) => Right(analyzer.typeMap(sym.nodeId))

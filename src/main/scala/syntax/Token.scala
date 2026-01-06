@@ -63,6 +63,7 @@ object Token {
   // literals
   final case class STRING_LITERAL(value: String) extends Token
   final case class INTEGER_LITERAL(value: String) extends Token
+  final case class INTERPOLATED_STRING_LITERAL(value: String) extends Token
   
   // language
   final case class BUT() extends Token
@@ -99,6 +100,7 @@ enum tokenId {
   case PRINT
   case INTEGER_LITERAL
   case STRING_LITERAL
+  case INTERPOLATED_STRING_LITERAL
   case ASSIGNMENT
   case EOL
   case IS

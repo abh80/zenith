@@ -87,7 +87,18 @@ class JavaScriptGenerator extends CodeGenerator {
           case ast.UnaryOperator.Negate => s"(-$o)"
           case ast.UnaryOperator.SquareRoot => s"Math.sqrt($o)"
         }
+      case Value.InterpolatedString(segments) =>
+        generateInterpolatedString(segments, context)
     }
+
+  private def generateInterpolatedString(segments: List[Value.InterpolatedSegment], context: GeneratorContext): String = {
+    // Use JavaScript template literals
+    val parts = segments.map {
+      case Value.TextSegment(text) => text
+      case Value.ExprSegment(value) => s"$${${generateExpression(value, context)}}"
+    }
+    s"`${parts.mkString("")}`"
+  }
 
   private def generateDeclaration(symbol: Symbol, ctx: GeneratorContext, keyword: String): String = {
     val jsVal = generateExpression(ctx.getSymbolValue(symbol.nodeId).get, ctx)
