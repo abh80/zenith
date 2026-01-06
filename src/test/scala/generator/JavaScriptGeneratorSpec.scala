@@ -2,21 +2,12 @@ package generator
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import analysis.Analyzer
-import syntax.{CompilationContext, Lexer, Parser}
-import java.io.File
+import testutil.TestHelper
 
 class JavaScriptGeneratorSpec extends AnyFunSuite with Matchers {
 
-  given ctx: CompilationContext = CompilationContext()
-
   def compile(input: String): util.Result[String] = {
-    val file = new File("test.zenith")
-    for {
-      ast <- Parser.parseInputFile(Parser.elementSequence)(file)
-      analyzer <- Analyzer.analyze(ast)
-      code <- new JavaScriptGenerator().generateCode(analyzer)
-    } yield code
+    TestHelper.compileString(input)
   }
 
   test("Generator should generate simple variable declaration") {
@@ -55,21 +46,21 @@ class JavaScriptGeneratorSpec extends AnyFunSuite with Matchers {
   }
 
   test("Generator should generate addition expression") {
-    val result = compile("x = a plus b")
+    val result = compile("a = 1\nb = 2\nx = a plus b")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("(a + b)")
   }
 
   test("Generator should generate multiplication expression") {
-    val result = compile("x = a times b")
+    val result = compile("a = 1\nb = 2\nx = a times b")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("(a * b)")
   }
 
   test("Generator should generate squared expression") {
-    val result = compile("x = velocity squared")
+    val result = compile("velocity = 10\nx = velocity squared")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("** 2")
@@ -83,28 +74,28 @@ class JavaScriptGeneratorSpec extends AnyFunSuite with Matchers {
   }
 
   test("Generator should generate floor division") {
-    val result = compile("x = a floor divided by b")
+    val result = compile("a = 10\nb = 3\nx = a floor divided by b")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("Math.floor")
   }
 
   test("Generator should generate modulo expression") {
-    val result = compile("x = a modulo b")
+    val result = compile("a = 10\nb = 3\nx = a modulo b")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("%")
   }
 
   test("Generator should generate power expression") {
-    val result = compile("x = a raised to b")
+    val result = compile("a = 2\nb = 3\nx = a raised to b")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("**")
   }
 
   test("Generator should generate negation expression") {
-    val result = compile("x = negative a")
+    val result = compile("a = 1\nx = negative a")
     result.isRight shouldBe true
     val code = result.toOption.get
     code should include("(-a)")

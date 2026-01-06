@@ -29,3 +29,25 @@ case class Analyzer(
     }
   }
 }
+
+object Analyzer {
+  def analyze(ast: List[AstNode[?]]): Result[Analyzer] = {
+    val visitor = new SimpleAstVisitor(ast)
+    val initialAnalyzer = Analyzer(
+      level = 0,
+      currentScope = Scope.createGlobal()
+    )
+
+    val res = visitor.foldWithRecovery(Result.success(initialAnalyzer)) { (result, node) =>
+      result match {
+        case Left(problems) => Right(Left(problems))
+        case Right(analyzer) =>
+          analyzer.analyzeNode(node) match {
+            case Left(problems) => Right(Left(problems))
+            case Right(newAnalyzer) => Right(Right(newAnalyzer))
+          }
+      }
+    }
+    res.flatten
+  }
+}

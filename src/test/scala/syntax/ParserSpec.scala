@@ -3,20 +3,12 @@ package syntax
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import ast._
-import java.io.File
+import testutil.TestHelper
 
 class ParserSpec extends AnyFunSuite with Matchers {
 
-  given ctx: CompilationContext = CompilationContext()
-
   def parse(input: String): util.Result[List[AstNode[_]]] = {
-    val file = new File("test.zenith")
-    val scanner = new Lexer.Scanner(file, input.toCharArray)
-    val tokens = scanner.tokenize() match {
-      case Left(errors) => return Left(errors)
-      case Right(t) => t
-    }
-    Parser.parseInputFile(Parser.elementSequence)(file)
+    TestHelper.parseString(input)
   }
 
   test("Parser should parse simple variable declaration") {

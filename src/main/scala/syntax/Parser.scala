@@ -15,6 +15,7 @@ object Parser extends Parsers {
   private var error: Option[Error] = None
 
   def parseInputFile[T](p: Parser[T])(f: File): util.Result[T] = {
+    error = None
     Metadata.file = f
     Using.resource(Source.fromFile(f)) { source =>
       parseTokens(p)(new Lexer.Scanner(f, source.toArray))
@@ -26,7 +27,6 @@ object Parser extends Parsers {
       case Left(errors) => return Left(errors)
       case Right(t) => t
     }
-    println(tokens)
     val reader = new TokenReader(tokens)
 
     parseInputs(p)(reader.asInstanceOf[Input]) match {
