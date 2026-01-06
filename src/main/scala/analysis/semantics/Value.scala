@@ -33,7 +33,8 @@ object Value {
 
   case class BinaryOp(left: Value, right: Value, op: ast.BinaryOperator) extends Value {
     override def getType: Type = {
-      if (left.getType == Type.Float || right.getType == Type.Float) Type.Float
+      if (op == ast.BinaryOperator.Add && (left.getType == Type.String || right.getType == Type.String)) Type.String
+      else if (left.getType == Type.Float || right.getType == Type.Float) Type.Float
       else Type.Integer 
     }
     override def toString: java.lang.String = s"BinaryOp($left, $op, $right)"

@@ -72,7 +72,11 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
           leftType <- inferExpressionType(left)
           rightType <- inferExpressionType(right)
           // TODO: Check for type compatibility (e.g. arithmetic on integers)
-        } yield if (leftType == Type.Float || rightType == Type.Float) Type.Float else Type.Integer
+        } yield {
+          if (op == ast.BinaryOperator.Add && (leftType == Type.String || rightType == Type.String)) Type.String
+          else if (leftType == Type.Float || rightType == Type.Float) Type.Float 
+          else Type.Integer
+        }
       case UnaryExpression(operand, op) =>
          inferExpressionType(operand).map(t => if (t == Type.Float) Type.Float else Type.Integer)
       case _ => Left(List(UnknownTypeDefinition(Locations.getOpt(exprNode.id).get, "Unknown type definition")))

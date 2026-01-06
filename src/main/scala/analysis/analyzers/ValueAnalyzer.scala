@@ -64,9 +64,13 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
     case _: FloatLiteral => Type.Float
     case IdentifierExpression(name) =>
       analyzer.currentScope.lookup(name).map(sym => analyzer.typeMap(sym.nodeId)).getOrElse(Type.String)
-    case _: BinaryExpression | _: UnaryExpression =>
-       // TODO: Check actual types
-       Type.Integer 
+    case BinaryExpression(left, right, op) =>
+       // Simplified inference for now
+       val leftType = inferExpressionType(left.data)
+       val rightType = inferExpressionType(right.data)
+       if (op == ast.BinaryOperator.Add && (leftType == Type.String || rightType == Type.String)) Type.String
+       else if (leftType == Type.Float || rightType == Type.Float) Type.Float
+       else Type.Integer 
   }
 
   private def float(in: String): Result[BigDecimal] =
