@@ -21,7 +21,15 @@ object Lexer {
     ("text", TYPE_STRING),
     ("number", TYPE_INTEGER),
     ("float", TYPE_FLOAT),
-    ("decimal", TYPE_FLOAT)
+    ("decimal", TYPE_FLOAT),
+    ("if", IF),
+    ("then", THEN),
+    ("do", DO),
+    ("end", END),
+    ("else", ELSE),
+    ("when", WHEN),
+    ("holds", HOLDS),
+    ("otherwise", OTHERWISE)
   )
 
   class Scanner(file: File, val content: Array[Char])(using ctx: CompilationContext) extends Reader with TokenInfo with Iterator[Token] {
@@ -49,6 +57,14 @@ object Lexer {
         case ASSIGNMENT => Token.ASSIGNMENT()
         case EOL => Token.EOL()
         case IS => Token.IS()
+        case IF => Token.IF()
+        case THEN => Token.THEN()
+        case DO => Token.DO()
+        case END => Token.END()
+        case ELSE => Token.ELSE()
+        case WHEN => Token.WHEN()
+        case HOLDS => Token.HOLDS()
+        case OTHERWISE => Token.OTHERWISE()
         case TYPE_STRING => Token.TYPE_STRING()
         case TYPE_INTEGER => Token.TYPE_INTEGER()
         case TYPE_FLOAT => Token.TYPE_FLOAT()

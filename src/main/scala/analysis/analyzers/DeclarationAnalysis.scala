@@ -27,11 +27,40 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
     for {
       exprType <- inferExpressionType(stmt.expression)
       exprValue <- new ValueAnalyzer(analyzer, stmt.expression).evaluateInitializer(stmt.expression.data, exprType)
-    } yield analyzer.copy(
-      valueMap = analyzer.valueMap + (node.id -> exprValue),
-      typeMap = analyzer.typeMap + (node.id -> exprType),
-      printStatements = analyzer.printStatements :+ node.asInstanceOf[AstNode[PrintStatement]]
+      printStatements = analyzer.printStatements :+ node.asInstanceOf[AstNode[PrintStatement]],
+      executionLog = analyzer.executionLog :+ node
     )
+
+  def analyzeIfStatement(stmt: IfStatement, nodeId: AstNode.Id): Result[Analyzer] =
+    for {
+      condType <- inferExpressionType(stmt.condition)
+      condVal <- new ValueAnalyzer(analyzer, stmt.condition).evaluateInitializer(stmt.condition.data, condType)
+
+      thenScope = new Scope(Some(analyzer.currentScope), analyzer.level + 1)
+      thenAnalyzer = analyzer.copy(currentScope = thenScope)
+      resultThen <- analyzeBlock(stmt.thenBlock, thenAnalyzer)
+
+      elseScope = new Scope(Some(analyzer.currentScope), analyzer.level + 1)
+      elseAnalyzer = analyzer.copy(currentScope = elseScope)
+      resultElse <- stmt.elseBlock match {
+        case Some(block) => analyzeBlock(block, elseAnalyzer)
+        case None => Right(elseAnalyzer)
+      }
+    } yield {
+      analyzer.copy(
+        usedSymbolSet = resultThen.usedSymbolSet ++ resultElse.usedSymbolSet,
+        printStatements = resultThen.printStatements ++ (resultElse.printStatements diff analyzer.printStatements),
+        valueMap = resultThen.valueMap ++ resultElse.valueMap + (stmt.condition.id -> condVal),
+        typeMap = resultThen.typeMap ++ resultElse.typeMap,
+        executionLog = analyzer.executionLog :+ node
+      )
+    }
+
+  private def analyzeBlock(stmts: List[AstNode[Declaration]], entry: Analyzer): Result[Analyzer] = {
+    stmts.foldLeft(Result.success(entry)) { (acc, node) =>
+      acc.flatMap(_.analyzeNode(node))
+    }
+  }
 
   private def inferOrValidateType(typeDefOpt: Option[Ast.TypeDef], value: AstNode[Expression]): Result[Type] =
     typeDefOpt match {
@@ -73,9 +102,14 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
           rightType <- inferExpressionType(right)
           // TODO: Check for type compatibility (e.g. arithmetic on integers)
         } yield {
-          if (op == ast.BinaryOperator.Add && (leftType == Type.String || rightType == Type.String)) Type.String
-          else if (leftType == Type.Float || rightType == Type.Float) Type.Float 
-          else Type.Integer
+        } yield {
+          import ast.BinaryOperator.*
+          op match {
+            case GreaterThan | LessThan | EqualTo => Type.Integer
+            case Add if leftType == Type.String || rightType == Type.String => Type.String
+            case _ if leftType == Type.Float || rightType == Type.Float => Type.Float
+            case _ => Type.Integer
+          }
         }
       case UnaryExpression(operand, op) =>
          inferExpressionType(operand).map(t => if (t == Type.Float) Type.Float else Type.Integer)
@@ -93,6 +127,7 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
     analyzer.copy(currentScope = scope, symbolScopeMap = analyzer.symbolScopeMap + (symbol -> analyzer.currentScope),
       typeMap = analyzer.typeMap + (node.id -> declaredType),
       valueMap = analyzer.valueMap + (node.id -> value),
-      usedSymbolSet = analyzer.usedSymbolSet + symbol
+      usedSymbolSet = analyzer.usedSymbolSet + symbol,
+      executionLog = analyzer.executionLog :+ node
     )
 }

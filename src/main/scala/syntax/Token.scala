@@ -72,6 +72,16 @@ object Token {
   final case class PRINT() extends Token
   final case class IS() extends Token
   
+  // control flow
+  final case class IF() extends Token
+  final case class THEN() extends Token
+  final case class DO() extends Token
+  final case class END() extends Token
+  final case class ELSE() extends Token
+  final case class WHEN() extends Token
+  final case class HOLDS() extends Token
+  final case class OTHERWISE() extends Token
+  
   // operators
   final case class ASSIGNMENT() extends Token
   
@@ -107,6 +117,14 @@ enum tokenId {
   case ASSIGNMENT
   case EOL
   case IS
+  case IF
+  case THEN
+  case DO
+  case END
+  case ELSE
+  case WHEN
+  case HOLDS
+  case OTHERWISE
   case TYPE_STRING
   case TYPE_INTEGER
   case TYPE_FLOAT

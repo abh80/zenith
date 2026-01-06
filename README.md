@@ -232,6 +232,10 @@ Zenith supports prose-like arithmetic operators that read like physics equations
   ```text
   total = force plus friction
   result = 5 added to 3
+  
+  # String Concatenation
+  greeting = "Hello" plus " World"
+  msg = "Value is " added to 42
   ```
 
 - **Subtraction**: `minus`, `less`
@@ -297,6 +301,44 @@ result = (2 added to 3) times 4      # Evaluates as (2 + 3) * 4 = 20
 kinetic_energy = mass times velocity squared divided by 2
 period = two times pi times square root of (length over gravity)
 ```
+
+### Control Flow
+
+Zenith provides two distinct syntaxes for conditional logic: a standard "programmatic" style and a "physics-flavored" style.
+
+#### Standard Style (If-Then-Else)
+Use `if ... then do ... end` blocks for standard conditional logic.
+
+```text
+if velocity greater 10 then do
+  print "Slow down"
+end if
+else do
+  print "Cruising"
+end else
+```
+
+#### Physics Style (When-Holds-Otherwise)
+Use `when ... holds do ... end` blocks for a more declarative, physics-oriented feel.
+
+```text
+when mass greater 0 holds do
+  force = gravity times mass
+end when
+otherwise do
+  force = 0
+end otherwise
+```
+
+**Comparison Operators:**
+
+| Operator | Syntax | JavaScript |
+|----------|--------|------------|
+| Greater Than | `greater` | `>` |
+| Less Than | `less` | `<` |
+| Equal To | `is` (context dependent) or `equal` (future) | `===` |
+
+*Note: Currently `greater` is the primary exposed comparison operator.*
 
 ### Complete Example
 

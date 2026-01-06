@@ -3,7 +3,7 @@ package ast
 sealed trait Expression
 
 enum BinaryOperator {
-  case Add, Subtract, Multiply, Divide, FloorDivide, Modulo, Power
+  case Add, Subtract, Multiply, Divide, FloorDivide, Modulo, Power, GreaterThan, LessThan, EqualTo
 }
 
 enum UnaryOperator {

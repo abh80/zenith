@@ -1,9 +1,8 @@
 package generator
 
 import analysis.Analyzer
-import analysis.semantics.Symbol.{ConstantSymbol, MutableSymbol}
 import analysis.semantics.{Symbol, Type, Value}
-import ast.{AstNode, PrintStatement}
+import ast.{AstNode, PrintStatement, Declaration, DecConstant, DecMutable, IfStatement}
 import generator.Target.JavaScript
 import generator.emitters.JavaScriptEmitter
 import util.Result
@@ -16,20 +15,50 @@ class JavaScriptGenerator extends CodeGenerator {
 
   override def generateCode(analyzer: Analyzer): Result[String] = {
     val context = GeneratorContext(analyzer, analyzer.currentScope)
-    val symbolsToProcess = analyzer.usedSymbolSet
-
-    val declarations = symbolsToProcess.toList.map { symbol =>
-      generateDeclarationForSymbol(symbol, context)
+    
+    val statements = analyzer.executionLog.map { node =>
+      generateStatement(node, context)
     }
 
-    val printStmts = analyzer.printStatements.map { printNode =>
-      generatePrintStatement(printNode, context)
-    }
-
-    val allStatements = declarations ++ printStmts
-    val (err, success) = allStatements.partitionMap(identity)
+    val (err, success) = statements.partitionMap(identity)
     if err.nonEmpty then Left(err.flatten)
     else Right(success.mkString("\n\n"))
+  }
+
+  private def generateStatement(node: AstNode[Declaration], ctx: GeneratorContext): Result[String] = {
+    node.data match {
+      case dec: DecConstant =>
+        Right(generateConstantDeclaration(Symbol.ConstantSymbol(node.asInstanceOf[AstNode[DecConstant]]), ctx))
+      case dec: DecMutable =>
+        Right(generateMutableDeclaration(Symbol.MutableSymbol(node.asInstanceOf[AstNode[DecMutable]]), ctx))
+      case print: PrintStatement =>
+        generatePrintStatement(node.asInstanceOf[AstNode[PrintStatement]], ctx)
+      case ifStmt: IfStatement =>
+        generateIfStatement(ifStmt, ctx)
+    }
+  }
+
+  private def generateIfStatement(stmt: IfStatement, ctx: GeneratorContext): Result[String] = {
+     // Retrieve condition value from map (it was stored via analyzeIfStatement)
+     // But wait, key in map is `stmt.condition.id`.
+     val condVal = ctx.analyzer.valueMap(stmt.condition.id)
+     val condJs = generateExpression(condVal, ctx)
+     
+     // Generate Then Block
+     val thenPart = stmt.thenBlock.map(node => generateStatement(node, ctx)).partitionMap(identity) match {
+       case (errs, _) if errs.nonEmpty => return Left(errs.flatten)
+       case (_, stmts) => stmts.mkString("\n" + ctx.indent) // Indentation handling?
+     }
+     
+     val elsePart = stmt.elseBlock.map { block =>
+       block.map(node => generateStatement(node, ctx)).partitionMap(identity) match {
+         case (errs, _) if errs.nonEmpty => return Left(errs.flatten)
+         case (_, stmts) => s" else {\n$stmts\n}"
+       }
+     }.getOrElse("")
+     
+     // Simple block formatting
+     Right(s"if ($condJs) {\n$thenPart\n}$elsePart")
   }
 
   private def generatePrintStatement(node: AstNode[PrintStatement], ctx: GeneratorContext): Result[String] = {
@@ -80,6 +109,9 @@ class JavaScriptGenerator extends CodeGenerator {
           case ast.BinaryOperator.FloorDivide => "/" // JS division is float, but if used in logic, verify user intent. User said "floor divided by... for integer results". JS `Math.floor(x/y)`.
           case ast.BinaryOperator.Modulo => "%"
           case ast.BinaryOperator.Power => "**"
+          case ast.BinaryOperator.GreaterThan => ">"
+          case ast.BinaryOperator.LessThan => "<"
+          case ast.BinaryOperator.EqualTo => "==="
         }
         if (op == ast.BinaryOperator.FloorDivide) s"Math.floor($l / $r)"
         else s"($l $opStr $r)"

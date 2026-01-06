@@ -17,7 +17,8 @@ case class Analyzer(
                      typeMap: Map[AstNode.Id, Type] = Map(),
                      valueMap: Map[AstNode.Id, Value] = Map(),
                      usedSymbolSet: ListSet[Symbol] = ListSet(),
-                     printStatements: List[AstNode[PrintStatement]] = List()
+                     printStatements: List[AstNode[PrintStatement]] = List(),
+                     executionLog: List[AstNode[Declaration]] = List()
                    ) {
   private type Node = AstNode[?]
 
@@ -26,6 +27,7 @@ case class Analyzer(
       case decConstant: DecConstant => new DeclarationAnalysis(this, node.asInstanceOf[AstNode[Declaration]]).analyzeConstantDeclaration(decConstant, node.id)
       case decMutable: DecMutable => new DeclarationAnalysis(this, node.asInstanceOf[AstNode[Declaration]]).analyzeMutableDeclaration(decMutable, node.id)
       case printStmt: PrintStatement => new DeclarationAnalysis(this, node.asInstanceOf[AstNode[Declaration]]).analyzePrintStatement(printStmt, node.id)
+      case ifStmt: IfStatement => new DeclarationAnalysis(this, node.asInstanceOf[AstNode[Declaration]]).analyzeIfStatement(ifStmt, node.id)
     }
   }
 }

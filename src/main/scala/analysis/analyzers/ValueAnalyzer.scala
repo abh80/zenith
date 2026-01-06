@@ -31,9 +31,11 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
         } yield Value.Float(convertedValue)
       case IdentifierExpression(name) => evaluateVariableReference(name, expectedType)
       case BinaryExpression(left, right, op) =>
+        val leftType = inferExpressionType(left.data)
+        val rightType = inferExpressionType(right.data)
         for {
-          leftVal <- evaluateExpression(left.data, expectedType)
-          rightVal <- evaluateExpression(right.data, expectedType)
+          leftVal <- evaluateExpression(left.data, leftType)
+          rightVal <- evaluateExpression(right.data, rightType)
         } yield Value.BinaryOp(leftVal, rightVal, op)
       case UnaryExpression(operand, op) =>
         for {
@@ -68,7 +70,9 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
        // Simplified inference for now
        val leftType = inferExpressionType(left.data)
        val rightType = inferExpressionType(right.data)
-       if (op == ast.BinaryOperator.Add && (leftType == Type.String || rightType == Type.String)) Type.String
+       import ast.BinaryOperator.*
+       if (op == Add && (leftType == Type.String || rightType == Type.String)) Type.String
+       else if (op == GreaterThan || op == LessThan || op == EqualTo) Type.Integer
        else if (leftType == Type.Float || rightType == Type.Float) Type.Float
        else Type.Integer 
   }

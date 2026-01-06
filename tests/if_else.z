@@ -1,0 +1,21 @@
+constant velocity = 15
+
+if velocity greater 10 then do
+  print "Slow down"
+end if
+else do
+  print "Cruising"
+end else
+
+mutable mass = 5
+mutable force = 0
+constant gravity = 9
+
+when mass greater 0 holds do
+  force = gravity times mass
+end when
+otherwise do
+  force = 0
+end otherwise
+
+print force

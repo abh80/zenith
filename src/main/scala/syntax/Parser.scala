@@ -51,12 +51,30 @@ object Parser extends Parsers {
   def elementSequence: Parser[List[ast.AstNode[_]]] = rep(eol) ~> repsep(declaration, rep1(eol)) <~ rep(eol) ^^ { decls => decls }
 
   private def declaration: Parser[ast.AstNode[ast.Declaration]] = node {
-    printStatement |
+    ifStatement | whenStatement | printStatement |
     ((Id ~ opt(is ~>! typedef) ~ (assignment ~>! expression)) >> { case id ~ typeDef ~ expr =>
       (but ~> constant ^^ { _ => ast.DecConstant(id, expr, typeDef) }) |
         (opt(but ~> mutable) ^^ { _ => ast.DecMutable(id, expr, typeDef) })
     })
   }
+
+  private def ifStatement: Parser[ast.Declaration] =
+    (ifToken ~> expression ~ thenToken ~ doToken ~ elementSequence ~ endToken ~ ifToken ~ opt(elseBlock)) ^^ {
+      case condition ~ _ ~ _ ~ thenStmts ~ _ ~ _ ~ elseStmts =>
+        ast.IfStatement(condition, thenStmts, elseStmts)
+    }
+
+  private def elseBlock: Parser[List[ast.AstNode[ast.Declaration]]] =
+    elseToken ~> doToken ~> elementSequence <~ endToken <~ elseToken
+
+  private def whenStatement: Parser[ast.Declaration] =
+    (whenToken ~> expression ~ holdsToken ~ doToken ~ elementSequence ~ endToken ~ whenToken ~ opt(otherwiseBlock)) ^^ {
+      case condition ~ _ ~ _ ~ thenStmts ~ _ ~ _ ~ elseStmts =>
+        ast.IfStatement(condition, thenStmts, elseStmts)
+    }
+
+  private def otherwiseBlock: Parser[List[ast.AstNode[ast.Declaration]]] =
+    otherwiseToken ~> doToken ~> elementSequence <~ endToken <~ otherwiseToken
 
   private def printStatement: Parser[ast.Declaration] =
     print ~> expression ^^ { expr => ast.PrintStatement(expr) }
@@ -73,10 +91,21 @@ object Parser extends Parsers {
   })
 
   private def isKeyword(s: String): Boolean = {
-    Set("plus", "added", "minus", "less", "times", "multiplied", "divided", "over", "modulo", "to", "raised", "squared", "square", "negative", "floor").contains(s)
+    Set("plus", "added", "minus", "less", "times", "multiplied", "divided", "over", "modulo", "to", "raised", "squared", "square", "negative", "floor", "greater").contains(s)
   }
 
-  private def expression: Parser[ast.AstNode[ast.Expression]] = arithmetic
+  private def expression: Parser[ast.AstNode[ast.Expression]] = comparison
+
+  private def comparison: Parser[ast.AstNode[ast.Expression]] =
+    chainl1(arithmetic,
+      (greater) ^^ { op => (left: ast.AstNode[ast.Expression], right: ast.AstNode[ast.Expression]) =>
+        val node = ast.BinaryExpression(left, right, op)
+        val n = ast.AstNode.createNode(node)
+        val loc = ast.Locations.get(left.id)
+        ast.Locations.put(n.id, loc)
+        n
+      }
+    )
 
   private def arithmetic: Parser[ast.AstNode[ast.Expression]] =
     chainl1(term,
@@ -165,6 +194,18 @@ object Parser extends Parsers {
 
   private def lparen = accept("(", { case Token.LPAREN() => () })
   private def rparen = accept(")", { case Token.RPAREN() => () })
+
+  private def greater = ident("greater") ^^^ ast.BinaryOperator.GreaterThan
+
+  // Control Flow Tokens
+  private def ifToken = accept("if", { case Token.IF() => () })
+  private def thenToken = accept("then", { case Token.THEN() => () })
+  private def doToken = accept("do", { case Token.DO() => () })
+  private def endToken = accept("end", { case Token.END() => () })
+  private def elseToken = accept("else", { case Token.ELSE() => () })
+  private def whenToken = accept("when", { case Token.WHEN() => () })
+  private def holdsToken = accept("holds", { case Token.HOLDS() => () })
+  private def otherwiseToken = accept("otherwise", { case Token.OTHERWISE() => () })
 
 
   private def is = accept("is", { case t: Token.IS => t })
