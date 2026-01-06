@@ -15,6 +15,7 @@ object Lexer {
     ("final", CONSTANT),
     ("constant", CONSTANT),
     ("mutable", MUTABLE),
+    ("print", PRINT),
     ("is", IS),
     ("string", TYPE_STRING),
     ("text", TYPE_STRING),
@@ -37,6 +38,7 @@ object Lexer {
         case BUT => Token.BUT()
         case CONSTANT => Token.CONSTANT()
         case MUTABLE => Token.MUTABLE()
+        case PRINT => Token.PRINT()
         case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
         case STRING_LITERAL => Token.STRING_LITERAL(strVal)
         case IDENTIFIER => Token.IDENTIFIER(strVal)
@@ -45,6 +47,8 @@ object Lexer {
         case IS => Token.IS()
         case TYPE_STRING => Token.TYPE_STRING()
         case TYPE_INTEGER => Token.TYPE_INTEGER()
+        case LPAREN => Token.LPAREN()
+        case RPAREN => Token.RPAREN()
       }
 
       o.setPos(pos())
@@ -119,6 +123,14 @@ object Lexer {
         case '"' =>
           advance()
           loadString()
+          
+        case '(' =>
+          advance()
+          token = LPAREN
+          
+        case ')' =>
+          advance()
+          token = RPAREN
 
         case invalidToken =>
           error(s"Invalid token: '$invalidToken'")

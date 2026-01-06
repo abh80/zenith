@@ -51,17 +51,121 @@ object Parser extends Parsers {
   def elementSequence: Parser[List[ast.AstNode[_]]] = rep(eol) ~> repsep(declaration, rep1(eol)) <~ rep(eol) ^^ { decls => decls }
 
   private def declaration: Parser[ast.AstNode[ast.Declaration]] = node {
-    (Id ~ opt(is ~>! typedef) ~ (assignment ~>! node(literal))) >> { case id ~ typeDef ~ lit =>
-      (but ~> constant ^^ { _ => ast.DecConstant(id, lit, typeDef) }) |
-        (opt(but ~> mutable) ^^ { _ => ast.DecMutable(id, lit, typeDef) })
-    }
+    printStatement |
+    ((Id ~ opt(is ~>! typedef) ~ (assignment ~>! expression)) >> { case id ~ typeDef ~ expr =>
+      (but ~> constant ^^ { _ => ast.DecConstant(id, expr, typeDef) }) |
+        (opt(but ~> mutable) ^^ { _ => ast.DecMutable(id, expr, typeDef) })
+    })
   }
+
+  private def printStatement: Parser[ast.Declaration] =
+    print ~> expression ^^ { expr => ast.PrintStatement(expr) }
+
+  private def print = accept("print", { case t: Token.PRINT => t })
 
   private def constant = accept("constant", { case c: Token.CONSTANT => c })
 
   private def assignment = accept("=", { case t: Token.ASSIGNMENT => t })
 
-  private def Id: Parser[ast.Ast.Id] = accept("identifier", { case Token.IDENTIFIER(s) => s })
+  private def Id: Parser[ast.Ast.Id] = accept("identifier", {
+    case Token.IDENTIFIER(s) if !isKeyword(s) => s
+    case Token.IDENTIFIER(s) if s == "pi" => s // Allow 'pi' as identifier
+  })
+
+  private def isKeyword(s: String): Boolean = {
+    Set("plus", "added", "minus", "less", "times", "multiplied", "divided", "over", "modulo", "to", "raised", "squared", "square", "negative", "floor").contains(s)
+  }
+
+  private def expression: Parser[ast.AstNode[ast.Expression]] = arithmetic
+
+  private def arithmetic: Parser[ast.AstNode[ast.Expression]] =
+    chainl1(term,
+      (plus | addedTo | minusBinary | less) ^^ { op => (left: ast.AstNode[ast.Expression], right: ast.AstNode[ast.Expression]) =>
+        val node = ast.BinaryExpression(left, right, op)
+        val n = ast.AstNode.createNode(node)
+        val loc = ast.Locations.get(left.id)
+        ast.Locations.put(n.id, loc)
+        n
+      }
+    )
+
+  private def term: Parser[ast.AstNode[ast.Expression]] =
+    chainl1(factor,
+      (times | multipliedBy | dividedBy | over | modulo | floorDividedBy) ^^ { op => (left: ast.AstNode[ast.Expression], right: ast.AstNode[ast.Expression]) =>
+        val node = ast.BinaryExpression(left, right, op)
+        val n = ast.AstNode.createNode(node)
+        val loc = ast.Locations.get(left.id)
+        ast.Locations.put(n.id, loc)
+        n
+      }
+    )
+
+  private def factor: Parser[ast.AstNode[ast.Expression]] =
+    atom ~ rep(
+      ((toThePower | raisedTo) ~ atom) |
+        squared
+    ) ^^ { case base ~ ops =>
+      ops.foldLeft(base) { (left, op) =>
+        op match {
+          case (powerOp: ast.BinaryOperator) ~ (right: ast.AstNode[ast.Expression]) =>
+             val node = ast.BinaryExpression(left, right, powerOp)
+             val n = ast.AstNode.createNode(node)
+             ast.Locations.put(n.id, ast.Locations.get(left.id))
+             n
+          case _ : String => // "squared"
+             val two = ast.AstNode.createNode[ast.Expression](ast.IntegerLiteral("2"))
+             // two doesn't have location... maybe use left location
+             ast.Locations.put(two.id, ast.Locations.get(left.id))
+             
+             val node = ast.BinaryExpression(left, two, ast.BinaryOperator.Power)
+             val n = ast.AstNode.createNode(node)
+             ast.Locations.put(n.id, ast.Locations.get(left.id))
+             n
+        }
+      }
+    }
+
+  private def atom: Parser[ast.AstNode[ast.Expression]] =
+    unary |
+    node(literal) |
+    lparen ~> expression <~ rparen
+
+  private def unary: Parser[ast.AstNode[ast.Expression]] =
+    (squareRootOf | negative | minusUnary) ~ atom ^^ { case op ~ operand =>
+      ast.AstNode.createNode(ast.UnaryExpression(operand, op))
+    }
+
+  // Operators
+  private def ident(s: String): Parser[String] = accept("identifier", { case Token.IDENTIFIER(`s`) => s })
+
+  private def plus = ident("plus") ^^^ ast.BinaryOperator.Add
+  private def addedTo = ident("added") ~ ident("to") ^^^ ast.BinaryOperator.Add
+  private def minusBinary = (ident("minus") | ident("less")) ^^^ ast.BinaryOperator.Subtract
+  private def less = ident("less") ^^^ ast.BinaryOperator.Subtract
+
+  private def times = ident("times") ^^^ ast.BinaryOperator.Multiply
+  private def multipliedBy = ident("multiplied") ~ ident("by") ^^^ ast.BinaryOperator.Multiply
+  
+  private def dividedBy = ident("divided") ~ ident("by") ^^^ ast.BinaryOperator.Divide
+  private def over = ident("over") ^^^ ast.BinaryOperator.Divide
+  private def floorDividedBy = ident("floor") ~ ident("divided") ~ ident("by") ^^^ ast.BinaryOperator.FloorDivide // TODO: FloorDiv operator? User said "floor divided by" for integer results. Standard Divide is integer? "Floor division: ... for integer results". Usually standard div in languages is integer or float. Let's assume Separate op or same op. User listed it as "Advanced Physics Ops". I should probably add FloorDivide op if I want to be precise, or map to Divide if Divide is integer.
+  // User said "Floor division: 'floor divided by' for integer results".
+  // Regular "divided by" might be floating point? "distance over time".
+  // I will add FloorDivide to BinaryOperator.
+
+  private def modulo = ident("modulo") ^^^ ast.BinaryOperator.Modulo
+
+  private def toThePower = ident("to") ~ ident("the") ~ ident("power") ^^^ ast.BinaryOperator.Power
+  private def raisedTo = ident("raised") ~ ident("to") ^^^ ast.BinaryOperator.Power
+  private def squared = ident("squared")
+
+  private def squareRootOf = ident("square") ~ ident("root") ~ ident("of") ^^^ ast.UnaryOperator.SquareRoot
+  private def negative = ident("negative") ^^^ ast.UnaryOperator.Negate
+  private def minusUnary = ident("minus") ^^^ ast.UnaryOperator.Negate
+
+  private def lparen = accept("(", { case Token.LPAREN() => () })
+  private def rparen = accept(")", { case Token.RPAREN() => () })
+
 
   private def is = accept("is", { case t: Token.IS => t })
 
@@ -69,7 +173,7 @@ object Parser extends Parsers {
     accept("literal", {
       case Token.INTEGER_LITERAL(value) => ast.IntegerLiteral(value)
       case Token.STRING_LITERAL(value) => ast.StringLiteral(value)
-    }) | rep1(accept("identifier", { case Token.IDENTIFIER(ident) => ident })) ^^ { identifiers =>
+    }) | rep1(Id) ^^ { identifiers =>
     if (identifiers.length == 1) 
       ast.IdentifierExpression(identifiers.head)
     else 

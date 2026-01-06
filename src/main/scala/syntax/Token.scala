@@ -67,6 +67,7 @@ object Token {
   // language
   final case class BUT() extends Token
   final case class MUTABLE() extends Token
+  final case class PRINT() extends Token
   final case class IS() extends Token
   
   // operators
@@ -78,6 +79,10 @@ object Token {
   // typedef
   final case class TYPE_STRING() extends Token
   final case class TYPE_INTEGER() extends Token
+  
+  // grouping
+  final case class LPAREN() extends Token
+  final case class RPAREN() extends Token
 }
 
 enum tokenId {
@@ -91,6 +96,7 @@ enum tokenId {
   case CONSTANT
   case MUTABLE
   case BUT
+  case PRINT
   case INTEGER_LITERAL
   case STRING_LITERAL
   case ASSIGNMENT
@@ -98,4 +104,8 @@ enum tokenId {
   case IS
   case TYPE_STRING
   case TYPE_INTEGER
+  
+  // grouping
+  case LPAREN
+  case RPAREN
 }

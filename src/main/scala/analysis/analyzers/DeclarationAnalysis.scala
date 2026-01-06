@@ -23,7 +23,17 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
       initialValue <- new ValueAnalyzer(analyzer, decl.value).evaluateInitializer(decl.value.data, declaredType)
     } yield updateAnalyzerWithDeclaration(analyzer, symbol, updatedScope, declaredType, initialValue)
 
-  private def inferOrValidateType(typeDefOpt: Option[Ast.TypeDef], value: AstNode[AstLiteral]): Result[Type] =
+  def analyzePrintStatement(stmt: PrintStatement, nodeId: AstNode.Id): Result[Analyzer] =
+    for {
+      exprType <- inferExpressionType(stmt.expression)
+      exprValue <- new ValueAnalyzer(analyzer, stmt.expression).evaluateInitializer(stmt.expression.data, exprType)
+    } yield analyzer.copy(
+      valueMap = analyzer.valueMap + (node.id -> exprValue),
+      typeMap = analyzer.typeMap + (node.id -> exprType),
+      printStatements = analyzer.printStatements :+ node.asInstanceOf[AstNode[PrintStatement]]
+    )
+
+  private def inferOrValidateType(typeDefOpt: Option[Ast.TypeDef], value: AstNode[Expression]): Result[Type] =
     typeDefOpt match {
       case Some(typeDef) =>
         for {
@@ -44,7 +54,7 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
       case _ => Left(List(UnknownTypeDefinition(getLoc, "Unknown type definition")))
     }
 
-  private def inferExpressionType(exprNode: AstNode[AstLiteral]): Result[Type] =
+  private def inferExpressionType(exprNode: AstNode[Expression]): Result[Type] =
     exprNode.data match {
       case StringLiteral(value) => Right(Type.String)
       case IntegerLiteral(value) => Right(Type.Integer)
@@ -54,6 +64,14 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
           case None => Right(Type.String)
             // Left(List(UndeclaredIdentifierReferenced(getLoc(exprNode.id), value)))
         }
+      case BinaryExpression(left, right, op) =>
+        for {
+          leftType <- inferExpressionType(left)
+          rightType <- inferExpressionType(right)
+          // TODO: Check for type compatibility (e.g. arithmetic on integers)
+        } yield Type.Integer
+      case UnaryExpression(operand, op) =>
+         inferExpressionType(operand).map(_ => Type.Integer)
       case _ => Left(List(UnknownTypeDefinition(Locations.getOpt(exprNode.id).get, "Unknown type definition")))
     }
 

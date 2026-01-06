@@ -3,6 +3,7 @@ package generator
 import analysis.Analyzer
 import analysis.semantics.Symbol.{ConstantSymbol, MutableSymbol}
 import analysis.semantics.{Symbol, Type, Value}
+import ast.{AstNode, PrintStatement}
 import generator.Target.JavaScript
 import generator.emitters.JavaScriptEmitter
 import util.Result
@@ -17,13 +18,24 @@ class JavaScriptGenerator extends CodeGenerator {
     val context = GeneratorContext(analyzer, analyzer.currentScope)
     val symbolsToProcess = analyzer.usedSymbolSet
 
-    val res = symbolsToProcess.toList.map { symbol =>
+    val declarations = symbolsToProcess.toList.map { symbol =>
       generateDeclarationForSymbol(symbol, context)
     }
 
-    val (err, success) = res.partitionMap(identity)
+    val printStmts = analyzer.printStatements.map { printNode =>
+      generatePrintStatement(printNode, context)
+    }
+
+    val allStatements = declarations ++ printStmts
+    val (err, success) = allStatements.partitionMap(identity)
     if err.nonEmpty then Left(err.flatten)
     else Right(success.mkString("\n\n"))
+  }
+
+  private def generatePrintStatement(node: AstNode[PrintStatement], ctx: GeneratorContext): Result[String] = {
+    val value = ctx.getSymbolValue(node.id).get
+    val jsExpr = generateExpression(value, ctx)
+    Right(s"console.log($jsExpr);")
   }
 
   private def generateDeclarationForSymbol(symbol: Symbol, ctx: GeneratorContext): Result[String] = {
@@ -55,6 +67,26 @@ class JavaScriptGenerator extends CodeGenerator {
       case Value.Integer(value) => emitter.emitIntegerLiteral(value.toString)
       case Value.String(value) => emitter.emitStringLiteral(value)
       case Value.IdentifierReference(name, _) => emitter.emitIdentifier(name)
+      case Value.BinaryOp(left, right, op) =>
+        val l = generateExpression(left, context)
+        val r = generateExpression(right, context)
+        val opStr = op match {
+          case ast.BinaryOperator.Add => "+"
+          case ast.BinaryOperator.Subtract => "-"
+          case ast.BinaryOperator.Multiply => "*"
+          case ast.BinaryOperator.Divide => "/"
+          case ast.BinaryOperator.FloorDivide => "/" // JS division is float, but if used in logic, verify user intent. User said "floor divided by... for integer results". JS `Math.floor(x/y)`.
+          case ast.BinaryOperator.Modulo => "%"
+          case ast.BinaryOperator.Power => "**"
+        }
+        if (op == ast.BinaryOperator.FloorDivide) s"Math.floor($l / $r)"
+        else s"($l $opStr $r)"
+      case Value.UnaryOp(operand, op) =>
+        val o = generateExpression(operand, context)
+        op match {
+          case ast.UnaryOperator.Negate => s"(-$o)"
+          case ast.UnaryOperator.SquareRoot => s"Math.sqrt($o)"
+        }
     }
 
   private def generateDeclaration(symbol: Symbol, ctx: GeneratorContext, keyword: String): String = {

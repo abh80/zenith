@@ -6,11 +6,11 @@ import ast.*
 import util.{FatalCompilerError, LocationResolver, Result, TypeMismatch, UndeclaredIdentifierReferenced}
 import analysis.semantics.Symbol
 
-class ValueAnalyzer(analyzer: Analyzer, node: AstNode[AstLiteral]) extends LocationResolver(node.id) {
-  def evaluateInitializer(value: AstLiteral, expectedType: Type): Result[Value] =
+class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends LocationResolver(node.id) {
+  def evaluateInitializer(value: Expression, expectedType: Type): Result[Value] =
     evaluateExpression(value, expectedType)
 
-  private def evaluateExpression(literal: AstLiteral, expectedType: Type): Result[Value] =
+  private def evaluateExpression(literal: Expression, expectedType: Type): Result[Value] =
     literal match {
       case StringLiteral(value) if expectedType == Type.String =>
         Right(Value.String(value))
@@ -20,6 +20,15 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[AstLiteral]) extends Locat
           convertedValue <- integer(value)
         } yield Value.Integer(convertedValue)
       case IdentifierExpression(name) => evaluateVariableReference(name, expectedType)
+      case BinaryExpression(left, right, op) =>
+        for {
+          leftVal <- evaluateExpression(left.data, expectedType)
+          rightVal <- evaluateExpression(right.data, expectedType)
+        } yield Value.BinaryOp(leftVal, rightVal, op)
+      case UnaryExpression(operand, op) =>
+        for {
+          valVal <- evaluateExpression(operand.data, expectedType)
+        } yield Value.UnaryOp(valVal, op)
       case _ => ???
     }
 

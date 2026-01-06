@@ -12,5 +12,7 @@ object Locations {
 
   def getOpt(id: AstNode.Id): Option[Location] = store.get(id)
   
+  def get(id: AstNode.Id): Location = store(id)
+  
   def getMapImmutable: Map[AstNode.Id, Location] = store.clone().toMap
 }

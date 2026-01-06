@@ -24,4 +24,14 @@ object Value {
 
     def underlyingType: Type = referenceType
   }
+
+  case class BinaryOp(left: Value, right: Value, op: ast.BinaryOperator) extends Value {
+    override def getType: Type = Type.Integer // Simplified assumption: arithmetic is integer
+    override def toString: java.lang.String = s"BinaryOp($left, $op, $right)"
+  }
+
+  case class UnaryOp(operand: Value, op: ast.UnaryOperator) extends Value {
+    override def getType: Type = Type.Integer // Simplified assumption
+    override def toString: java.lang.String = s"UnaryOp($op, $operand)"
+  }
 }
