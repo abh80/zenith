@@ -19,7 +19,9 @@ object Lexer {
     ("is", IS),
     ("string", TYPE_STRING),
     ("text", TYPE_STRING),
-    ("number", TYPE_INTEGER)
+    ("number", TYPE_INTEGER),
+    ("float", TYPE_FLOAT),
+    ("decimal", TYPE_FLOAT)
   )
 
   class Scanner(file: File, val content: Array[Char])(using ctx: CompilationContext) extends Reader with TokenInfo with Iterator[Token] {
@@ -40,6 +42,7 @@ object Lexer {
         case MUTABLE => Token.MUTABLE()
         case PRINT => Token.PRINT()
         case INTEGER_LITERAL => Token.INTEGER_LITERAL(strVal)
+        case FLOAT_LITERAL => Token.FLOAT_LITERAL(strVal)
         case STRING_LITERAL => Token.STRING_LITERAL(strVal)
         case INTERPOLATED_STRING_LITERAL => Token.INTERPOLATED_STRING_LITERAL(strVal)
         case IDENTIFIER => Token.IDENTIFIER(strVal)
@@ -48,6 +51,7 @@ object Lexer {
         case IS => Token.IS()
         case TYPE_STRING => Token.TYPE_STRING()
         case TYPE_INTEGER => Token.TYPE_INTEGER()
+        case TYPE_FLOAT => Token.TYPE_FLOAT()
         case LPAREN => Token.LPAREN()
         case RPAREN => Token.RPAREN()
       }
@@ -170,7 +174,19 @@ object Lexer {
         putCharInBuffer(ch)
         advance()
       }
-      token = tokenId.INTEGER_LITERAL
+      
+      if (ch == '.') {
+        putCharInBuffer(ch)
+        advance()
+        
+        while (digitToInt(ch, 10) >= 0) {
+           putCharInBuffer(ch)
+           advance()
+        }
+        token = tokenId.FLOAT_LITERAL
+      } else {
+        token = tokenId.INTEGER_LITERAL
+      }
       flushLiteralBufferToStrVal()
     }
 

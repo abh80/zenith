@@ -19,6 +19,16 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
         for {
           convertedValue <- integer(value)
         } yield Value.Integer(convertedValue)
+      case IntegerLiteral(value)
+        if expectedType == Type.Float =>
+        for {
+          convertedValue <- integer(value)
+        } yield Value.Float(BigDecimal(convertedValue))
+      case FloatLiteral(value)
+        if expectedType == Type.Float =>
+        for {
+          convertedValue <- float(value)
+        } yield Value.Float(convertedValue)
       case IdentifierExpression(name) => evaluateVariableReference(name, expectedType)
       case BinaryExpression(left, right, op) =>
         for {
@@ -51,11 +61,19 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
   private def inferExpressionType(expr: Expression): Type = expr match {
     case _: StringLiteral | _: InterpolatedString => Type.String
     case _: IntegerLiteral => Type.Integer
+    case _: FloatLiteral => Type.Float
     case IdentifierExpression(name) =>
       analyzer.currentScope.lookup(name).map(sym => analyzer.typeMap(sym.nodeId)).getOrElse(Type.String)
-    case _: BinaryExpression | _: UnaryExpression => Type.Integer
-    case _ => Type.String
+    case _: BinaryExpression | _: UnaryExpression =>
+       // TODO: Check actual types
+       Type.Integer 
   }
+
+  private def float(in: String): Result[BigDecimal] =
+    try
+      Right(BigDecimal(in.trim))
+    catch
+      case _: NumberFormatException => Left(List(FatalCompilerError()))
 
   private def integer(in: String): Result[BigInt] =
     try
@@ -65,7 +83,21 @@ class ValueAnalyzer(analyzer: Analyzer, node: AstNode[Expression]) extends Locat
 
   private def evaluateVariableReference(name: Ast.Id, expectedType: Type): Result[Value] =
     analyzer.currentScope.lookup(name) match {
-      case Some(sym) if analyzer.typeMap(sym.nodeId) == expectedType => Right(Value.IdentifierReference(sym.name, expectedType))
+      case Some(sym) if analyzer.typeMap(sym.nodeId).isCompatibleWith(expectedType) =>
+         // Need to handle promotion if types differ but are compatible
+         val actualType = analyzer.typeMap(sym.nodeId)
+         if (actualType == Type.Integer && expectedType == Type.Float) {
+            // Implicit promotion from referencing an integer variable where float is expected
+            // We return a wrapped reference that implies promotion? 
+            // Value.IdentifierReference stores referenceType.
+            // If we return Reference with Integer type, it might later clash if we expect Float value.
+            // But Value.IdentifierReference is just looking up.
+            // When generating code, if it's an IdentifierReference, we emit symbol name.
+            // JS handles number promotion.
+            Right(Value.IdentifierReference(sym.name, expectedType))
+         } else {
+            Right(Value.IdentifierReference(sym.name, expectedType))
+         }
       case Some(sym) => Left(List(TypeMismatch(LocationResolver.getLoc(node.id), analyzer.typeMap(sym.nodeId), expectedType)))
       case None => Right(Value.String(name))
         //Left(List(UndeclaredIdentifierReferenced(LocationResolver.getLoc(node.id), name)))

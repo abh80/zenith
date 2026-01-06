@@ -92,6 +92,10 @@ speed = 100
 
 # Explicit mutable
 force = 50 but mutable
+
+# Explicit float
+pi is float = 3.14159
+val is decimal = 10.5
 ```
 
 ### Print Statements
@@ -205,11 +209,13 @@ temp = negative 5  # Result: -5
 ### Types
 
 - `integer`: Whole numbers.
+- `float` (or `decimal`): Floating-point numbers.
 - `string`: Text.
 
 ### Literals
 
 - **Integers**: Standard numeric literals (e.g., `42`).
+- **Floats**: Decimal literals (e.g., `3.14`, `0.001`).
 - **Strings (Quoted)**: Standard string literals (e.g., `"Hello"`).
 - **Strings (Unquoted)**: A sequence of identifiers is automatically treated as a space-separated string.
     ```text

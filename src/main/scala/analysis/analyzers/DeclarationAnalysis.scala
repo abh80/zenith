@@ -51,6 +51,7 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
     typeDef match {
       case Ast.TypeDefString() => Right(Type.String)
       case Ast.TypeDefInteger() => Right(Type.Integer)
+      case Ast.TypeDefFloat() => Right(Type.Float)
       case _ => Left(List(UnknownTypeDefinition(getLoc, "Unknown type definition")))
     }
 
@@ -58,6 +59,7 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
     exprNode.data match {
       case StringLiteral(value) => Right(Type.String)
       case IntegerLiteral(value) => Right(Type.Integer)
+      case FloatLiteral(value) => Right(Type.Float)
       case InterpolatedString(_) => Right(Type.String)
       case IdentifierExpression(value) =>
         analyzer.currentScope.lookup(value) match {
@@ -70,9 +72,9 @@ class DeclarationAnalysis(analyzer: Analyzer, node: AstNode[Declaration]) extend
           leftType <- inferExpressionType(left)
           rightType <- inferExpressionType(right)
           // TODO: Check for type compatibility (e.g. arithmetic on integers)
-        } yield Type.Integer
+        } yield if (leftType == Type.Float || rightType == Type.Float) Type.Float else Type.Integer
       case UnaryExpression(operand, op) =>
-         inferExpressionType(operand).map(_ => Type.Integer)
+         inferExpressionType(operand).map(t => if (t == Type.Float) Type.Float else Type.Integer)
       case _ => Left(List(UnknownTypeDefinition(Locations.getOpt(exprNode.id).get, "Unknown type definition")))
     }
 

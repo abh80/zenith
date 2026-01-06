@@ -63,6 +63,7 @@ object Token {
   // literals
   final case class STRING_LITERAL(value: String) extends Token
   final case class INTEGER_LITERAL(value: String) extends Token
+  final case class FLOAT_LITERAL(value: String) extends Token
   final case class INTERPOLATED_STRING_LITERAL(value: String) extends Token
   
   // language
@@ -80,6 +81,7 @@ object Token {
   // typedef
   final case class TYPE_STRING() extends Token
   final case class TYPE_INTEGER() extends Token
+  final case class TYPE_FLOAT() extends Token
   
   // grouping
   final case class LPAREN() extends Token
@@ -99,6 +101,7 @@ enum tokenId {
   case BUT
   case PRINT
   case INTEGER_LITERAL
+  case FLOAT_LITERAL
   case STRING_LITERAL
   case INTERPOLATED_STRING_LITERAL
   case ASSIGNMENT
@@ -106,6 +109,7 @@ enum tokenId {
   case IS
   case TYPE_STRING
   case TYPE_INTEGER
+  case TYPE_FLOAT
   
   // grouping
   case LPAREN

@@ -55,6 +55,7 @@ class JavaScriptGenerator extends CodeGenerator {
   private def generateTypeDefComment(typeDef: Type, ctx: GeneratorContext): String = {
     val comment = typeDef match {
       case integer: Type.Integer => "@type {number}"
+      case float: Type.Float => "@type {number}"
       case primitive: Type.Primitive => ???
       case str: Type.String => "@type {string}"
       case reference: Type.IdentifierReference => "" // never needed since it will always be resolved to a native type
@@ -65,6 +66,7 @@ class JavaScriptGenerator extends CodeGenerator {
   private def generateExpression(value: Value, context: GeneratorContext): String =
     value match {
       case Value.Integer(value) => emitter.emitIntegerLiteral(value.toString)
+      case Value.Float(value) => value.toString
       case Value.String(value) => emitter.emitStringLiteral(value)
       case Value.IdentifierReference(name, _) => emitter.emitIdentifier(name)
       case Value.BinaryOp(left, right, op) =>

@@ -172,6 +172,7 @@ object Parser extends Parsers {
   private def literal: Parser[ast.AstLiteral] =
     accept("literal", {
       case Token.INTEGER_LITERAL(value) => ast.IntegerLiteral(value)
+      case Token.FLOAT_LITERAL(value) => ast.FloatLiteral(value)
       case Token.STRING_LITERAL(value) => ast.StringLiteral(value)
       case Token.INTERPOLATED_STRING_LITERAL(value) => parseInterpolatedString(value)
     }) | rep1(Id) ^^ { identifiers =>
@@ -265,6 +266,7 @@ object Parser extends Parsers {
 
   private def typedef: Parser[ast.Ast.TypeDef] = accept("type definition", {
     case Token.TYPE_INTEGER() => ast.Ast.TypeDefInteger()
+    case Token.TYPE_FLOAT() => ast.Ast.TypeDefFloat()
     case Token.TYPE_STRING() => ast.Ast.TypeDefString()
   })
 

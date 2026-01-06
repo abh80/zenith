@@ -19,6 +19,8 @@ final case class StringLiteral(value: String) extends AstLiteral
 
 final case class IntegerLiteral(value: String) extends AstLiteral
 
+final case class FloatLiteral(value: String) extends AstLiteral
+
 final case class IdentifierExpression(value: Ast.Id) extends AstLiteral
 
 // String interpolation support

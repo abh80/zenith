@@ -6,4 +6,5 @@ object Ast {
   sealed trait TypeDef
   final case class TypeDefString() extends TypeDef
   final case class TypeDefInteger() extends TypeDef
+  final case class TypeDefFloat() extends TypeDef
 }

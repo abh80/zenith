@@ -13,6 +13,12 @@ object Value {
     override def getType: Type = Type.Integer
   }
 
+  case class Float(value: BigDecimal) extends Value {
+    override def isZero: Boolean = value == 0
+
+    override def getType: Type = Type.Float
+  }
+
   case class String(value: java.lang.String) extends Value {
     override def getType: Type = Type.String
   }
@@ -26,12 +32,15 @@ object Value {
   }
 
   case class BinaryOp(left: Value, right: Value, op: ast.BinaryOperator) extends Value {
-    override def getType: Type = Type.Integer // Simplified assumption: arithmetic is integer
+    override def getType: Type = {
+      if (left.getType == Type.Float || right.getType == Type.Float) Type.Float
+      else Type.Integer 
+    }
     override def toString: java.lang.String = s"BinaryOp($left, $op, $right)"
   }
 
   case class UnaryOp(operand: Value, op: ast.UnaryOperator) extends Value {
-    override def getType: Type = Type.Integer // Simplified assumption
+    override def getType: Type = operand.getType
     override def toString: java.lang.String = s"UnaryOp($op, $operand)"
   }
 

@@ -31,6 +31,17 @@ object Type {
     override def isCompatibleWith(t: Type): Boolean =
       t match {
         case Integer => true
+        case Float => true
+        case _ => false
+      }
+  }
+
+  sealed trait Float extends Type {
+    override def isFloat: Boolean = true
+
+    override def isCompatibleWith(t: Type): Boolean =
+      t match {
+        case Float => true
         case _ => false
       }
   }
@@ -51,6 +62,14 @@ object Type {
     override def isStreamPrintable: Boolean = true
 
     override def toString = "Integer"
+  }
+
+  case object Float extends Float {
+    override def getDefaultValue: Option[Value] = Some(Value.Float(0.0))
+
+    override def isStreamPrintable: Boolean = true
+
+    override def toString = "Float"
   }
 
   case object String extends String {
